@@ -66,3 +66,4 @@ flutter:
         - assets/fonts/
         - assets/icons/
         - assets/watson.svg
+        - assets/userExample.svg

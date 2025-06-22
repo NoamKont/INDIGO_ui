@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import '../../services/user/home_screen_service.dart';
 import '../../widgets/bottom_search_bar.dart';
+import '../../widgets/navigation_bottom_sheet.dart';
 import '../../widgets/zommable_svg_view.dart';
 import '../../widgets/floor_picker.dart';
 
@@ -13,6 +14,7 @@ import '../../widgets/floor_picker.dart';
 class SvgZoomView extends StatefulWidget {
   final String buildingName;
   final int buildingId;
+
   final List<String> places = [
     'Museum',
     'Gas Station',
@@ -23,6 +25,7 @@ class SvgZoomView extends StatefulWidget {
     'Hospital',
     'Cafe',
   ];
+
   SvgZoomView({
     super.key,
     required this.buildingName,
@@ -58,6 +61,23 @@ class _SvgZoomViewState extends State<SvgZoomView> {
     // });
   }
 
+
+  void onNavigationDataReceived(Map<String, dynamic> navigationData) async{
+    String? destination = navigationData['destination'];
+    String? currentLocation = navigationData['currentLocation'];
+    print('=== Go Now Pressed ===');
+    print('Destination: $destination');
+    print('Current Location: $currentLocation');
+    print('====================');
+
+    // Apply the navigation data to update svgData
+    if (destination != null && destination.isNotEmpty) {
+      if (currentLocation != null && currentLocation.isNotEmpty) {
+        svgData = await rootBundle.loadString('assets/userExample.svg');//TODO delete this line when you have the actual SVG file
+        setState(() {});
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,10 +101,7 @@ class _SvgZoomViewState extends State<SvgZoomView> {
               ),
             ],
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-
-          ),
+          NavigationBottomSheet(onNavigationPressed: onNavigationDataReceived ,places: widget.places,),
         ],
       ),
     );

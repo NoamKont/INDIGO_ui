@@ -3,8 +3,6 @@ import 'package:flutter_svg/svg.dart';
 import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
 
-import 'manage_building_screen.dart';
-
 class AdminBuildingCard extends StatelessWidget {
   final Building building;
   final VoidCallback? onTap; // Nullable in case it's optional
