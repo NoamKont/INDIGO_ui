@@ -39,7 +39,7 @@ class AdminService {
         filename: 'config.yaml',
         contentType: MediaType('text', 'plain'),
       ))
-      ..fields['buildingId'] = '4';
+      ..fields['buildingId'] = '4'; //TODO talk to omri delete this requirement
 
     final response = await request.send();
 
@@ -72,8 +72,9 @@ class AdminService {
 
 
   /// Fetches the SVG file **THAT THE ADMIN GETS** and can manage the labels and add nodes.
-  static Future<Uint8List?> fetchAdminFloorSvgWithCache(int buildingId) async {
-    final svgUrl = "https://your-api.com/buildings/$buildingId" ;
+  static Future<Uint8List?> loadAdminSvgWithCache(int buildingId) async {
+    //final svgUrl = "http://your-api.com/buildings/$buildingId" ;
+    final svgUrl = "https://www.svgrepo.com/download/533811/donuts-cake.svg" ;
     try {
       final file = await DefaultCacheManager().getSingleFile(svgUrl);
       return await file.readAsBytes();

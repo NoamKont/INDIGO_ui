@@ -23,7 +23,7 @@ class BuildingCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SvgZoomView(buildingName: building.name, buildingId: building.buildingId),
+              builder: (context) => UserFloorView(buildingName: building.name, buildingId: building.buildingId),
             ),
           );
           // final svgBytes = await FloorService.fetchSvgFromUrlWithCache(building.buildingId);

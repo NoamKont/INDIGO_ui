@@ -3,6 +3,8 @@ import 'package:flutter_svg/svg.dart';
 import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
 
+import '../../widgets/admin_floor_view.dart';
+
 class AdminBuildingCard extends StatelessWidget {
   final Building building;
   final VoidCallback? onTap; // Nullable in case it's optional
@@ -23,7 +25,7 @@ class AdminBuildingCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SvgZoomView(buildingName: building.name, buildingId: building.buildingId),
+              builder: (context) => AdminFloorView(buildingName: building.name, buildingId: building.buildingId),
             ),
           );
           // final svgBytes = await FloorService.fetchSvgFromUrlWithCache(building.buildingId);

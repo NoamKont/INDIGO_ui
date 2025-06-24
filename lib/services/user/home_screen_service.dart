@@ -19,7 +19,7 @@ class HomeService {
   }
 
   /// Fetches the SVG file **THAT THE CLIENT GETS** from a URL and caches it using DefaultCacheManager.
-  static Future<Uint8List?> fetchUserFloorSvgWithCache(int buildingId,int floor) async {
+  static Future<Uint8List?> loadUserSvgWithCache(int buildingId, int floor) async {
     final svgUrl = "https://your-api.com/buildings/$buildingId?floor=$floor"; // Replace with your actual URL;
     try {
       final file = await DefaultCacheManager().getSingleFile(svgUrl);
