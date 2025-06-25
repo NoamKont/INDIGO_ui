@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:indigo_test/screens/admin/yaml_form_screen.dart';
 import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
 
+import '../../services/admin/new_building_service.dart';
 import '../../widgets/admin_floor_view.dart';
 
 class AdminBuildingCard extends StatelessWidget {
@@ -62,17 +64,19 @@ class AdminBuildingCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(building.address),
-        trailing: _MoreOptionsMenu(),
+        trailing: _MoreOptionsMenu(building: building,),
       ),
     );
   }
 }
 
 class _MoreOptionsMenu extends StatelessWidget {
+  final Building building;
 
   const _MoreOptionsMenu({
-    Key? key
-  }) : super(key: key);
+    super.key,
+    required this.building,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +84,10 @@ class _MoreOptionsMenu extends StatelessWidget {
       tooltip: 'More options',
       onSelected: (value) => _handleSelection(context, value),
       itemBuilder: (BuildContext context) => [
+        const PopupMenuItem(
+          value: 'add',
+          child: _MenuItemWithIcon(icon: Icons.add, text: 'Add Floor'),
+        ),
         const PopupMenuItem(
           value: 'edit',
           child: _MenuItemWithIcon(icon: Icons.edit, text: 'Edit Floors'),
@@ -92,7 +100,7 @@ class _MoreOptionsMenu extends StatelessWidget {
     );
   }
 
-  void _handleSelection(BuildContext context, String value) {
+  Future<void> _handleSelection(BuildContext context, String value) async {
     switch (value) {
       case 'edit':
         ScaffoldMessenger.of(context).showSnackBar(
@@ -103,6 +111,26 @@ class _MoreOptionsMenu extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Delete pressed')),
         );
+        break;
+      case 'add':
+        final file = await BuildingService().pickDwgFile();
+        if (file != null) {
+          final yaml = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => YamlDetailsForm(dwgFile: file.name),
+            ),
+          );
+          if (yaml != null) {
+            print('YAML returned:');
+            print(yaml);
+            // TODO: Send YAML and DWG to server
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No file selected')),
+          );
+        }
         break;
     }
   }
