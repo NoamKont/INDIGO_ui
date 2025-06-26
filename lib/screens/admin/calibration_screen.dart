@@ -1,472 +1,19 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_svg/flutter_svg.dart';
-// import 'package:flutter/services.dart';
-// import '../../services/admin/calibration_service.dart';
-//
-// class CalibrationScreen extends StatefulWidget {
-//   final String buildingName;
-//   final int buildingId;
-//
-//   const CalibrationScreen({
-//     super.key,
-//     required this.buildingName,
-//     required this.buildingId,
-//   });
-//
-//   @override
-//   State<CalibrationScreen> createState() => _CalibrationScreenState();
-// }
-//
-// class _CalibrationScreenState extends State<CalibrationScreen> {
-//   String? svgData;
-//   final TransformationController _transformationController = TransformationController();
-//   final TextEditingController _distanceController = TextEditingController();
-//   final CalibrationService _calibrationService = CalibrationService();
-//
-//   Offset? firstPoint;
-//   Offset? secondPoint;
-//   bool isLoading = false;
-//   bool canSubmit = false;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     loadSvg();
-//   }
-//
-//   @override
-//   void dispose() {
-//     _distanceController.dispose();
-//     super.dispose();
-//   }
-//
-//   Future<void> loadSvg() async {
-//
-//     // Load your SVG file here
-//     svgData = await rootBundle.loadString('assets/watson.svg');
-//     setState(() {});
-//
-//
-//     // setState(() {
-//     //   isLoading = true;
-//     // });
-//     //
-//     // try {
-//     //   final svgString = await _calibrationService.loadSvgFile(widget.buildingId);
-//     //   setState(() {
-//     //     svgData = svgString;
-//     //     isLoading = false;
-//     //   });
-//     //
-//     //   // Reset the transformation to show the full SVG initially
-//     //   WidgetsBinding.instance.addPostFrameCallback((_) {
-//     //     _transformationController.value = Matrix4.identity();
-//     //   });
-//     // } catch (e) {
-//     //   print('Error loading SVG: $e');
-//     //   setState(() {
-//     //     isLoading = false;
-//     //   });
-//     //   _showErrorDialog('Failed to load floor plan. Please try again.');
-//     // }
-//   }
-//
-//   void _onSvgTap(TapDownDetails details) {
-//     if (firstPoint == null) {
-//       setState(() {
-//         firstPoint = details.localPosition;
-//         print('First point set at: ${firstPoint!.dx}, ${firstPoint!.dy}');
-//       });
-//     } else if (secondPoint == null) {
-//       setState(() {
-//         secondPoint = details.localPosition;
-//         print('Second point set at: ${secondPoint!.dx}, ${secondPoint!.dy}');
-//         _updateSubmitStatus();
-//       });
-//       _showDistanceDialog();
-//     }
-//   }
-//
-//   void _resetPoints() {
-//     setState(() {
-//       firstPoint = null;
-//       secondPoint = null;
-//       canSubmit = false;
-//       _distanceController.clear();
-//     });
-//   }
-//
-//   void _updateSubmitStatus() {
-//     setState(() {
-//       canSubmit = firstPoint != null &&
-//           secondPoint != null &&
-//           _distanceController.text.trim().isNotEmpty;
-//     });
-//   }
-//
-//   void _showDistanceDialog() {
-//     showDialog(
-//       context: context,
-//       barrierDismissible: false,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: const Text('Enter Distance'),
-//           content: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             children: [
-//               const Text('Enter the real distance between the two points in centimeters:'),
-//               const SizedBox(height: 16),
-//               TextField(
-//                 controller: _distanceController,
-//                 keyboardType: TextInputType.number,
-//                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
-//                 decoration: const InputDecoration(
-//                   hintText: 'Distance in cm',
-//                   border: OutlineInputBorder(),
-//                   suffixText: 'cm',
-//                 ),
-//                 autofocus: true,
-//                 onChanged: (value) => _updateSubmitStatus(),
-//               ),
-//             ],
-//           ),
-//           actions: [
-//             TextButton(
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//                 _resetPoints();
-//               },
-//               child: const Text('Cancel'),
-//             ),
-//             ElevatedButton(
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//                 _updateSubmitStatus();
-//               },
-//               child: const Text('OK'),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-//
-//   Future<void> _submitCalibration() async {
-//     if (!canSubmit || firstPoint == null || secondPoint == null) return;
-//
-//     setState(() {
-//       isLoading = true;
-//     });
-//
-//     try {
-//       final distance = double.parse(_distanceController.text.trim());
-//
-//       final success = await _calibrationService.submitCalibrationData(
-//         buildingId: widget.buildingId,
-//         firstPoint: firstPoint!,
-//         secondPoint: secondPoint!,
-//         distanceInCm: distance,
-//       );
-//
-//       setState(() {
-//         isLoading = false;
-//       });
-//
-//       if (success) {
-//         _showSuccessDialog();
-//         // TODO: Add your code here for what happens after successful submission
-//         // For example: navigate to next screen, update building data, etc.
-//
-//       } else {
-//         _showErrorDialog('Failed to submit calibration data. Please try again.');
-//       }
-//     } catch (e) {
-//       setState(() {
-//         isLoading = false;
-//       });
-//       print('Error submitting calibration: $e');
-//       _showErrorDialog('An error occurred while submitting. Please try again.');
-//     }
-//   }
-//
-//   void _showSuccessDialog() {
-//     showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: const Text('Success!'),
-//           content: const Text('Calibration data has been successfully submitted.'),
-//           actions: [
-//             TextButton(
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//                 // TODO: Add your code here for what happens after user clicks "Done"
-//                 // For example: navigate back, show next step, etc.
-//                 // Navigator.of(context).pushReplacement(...);
-//               },
-//               child: const Text('Done'),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-//
-//   void _showErrorDialog(String message) {
-//     showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: const Text('Error'),
-//           content: Text(message),
-//           actions: [
-//             TextButton(
-//               onPressed: () => Navigator.of(context).pop(),
-//               child: const Text('OK'),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-//
-//   Widget _buildInstructions() {
-//     String instruction;
-//     if (firstPoint == null) {
-//       instruction = 'Tap on the floor plan to set the first point';
-//     } else if (secondPoint == null) {
-//       instruction = 'Tap on the floor plan to set the second point';
-//     } else {
-//       instruction = 'Enter the distance and click Done to submit';
-//     }
-//
-//     return Container(
-//       padding: const EdgeInsets.all(16.0),
-//       color: Colors.blue.shade50,
-//       child: Row(
-//         children: [
-//           Icon(Icons.info_outline, color: Colors.blue.shade700),
-//           const SizedBox(width: 8),
-//           Expanded(
-//             child: Text(
-//               instruction,
-//               style: TextStyle(
-//                 fontSize: 16,
-//                 color: Colors.blue.shade700,
-//                 fontWeight: FontWeight.w500,
-//               ),
-//             ),
-//           ),
-//           if (firstPoint != null)
-//             TextButton(
-//               onPressed: _resetPoints,
-//               child: const Text('Reset'),
-//             ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildPointMarker(Offset point, Color color, String label) {
-//     return Positioned(
-//       left: point.dx - 15,
-//       top: point.dy - 15,
-//       child: Container(
-//         width: 30,
-//         height: 30,
-//         decoration: BoxDecoration(
-//           color: color.withValues(alpha: 0.8),
-//           shape: BoxShape.circle,
-//           border: Border.all(color: Colors.white, width: 2),
-//           boxShadow: [
-//             BoxShadow(
-//               color: Colors.black.withOpacity(0.5),
-//               blurRadius: 6,
-//               offset: const Offset(0, 3),
-//             ),
-//           ],
-//         ),
-//         child: Center(
-//           child: Text(
-//             label,
-//             style: const TextStyle(
-//               color: Colors.white,
-//               fontSize: 12,
-//               fontWeight: FontWeight.bold,
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildLine() {
-//     if (firstPoint == null || secondPoint == null) return const SizedBox.shrink();
-//
-//     return CustomPaint(
-//       painter: LinePainter(firstPoint!, secondPoint!),
-//       child: Container(),
-//     );
-//   }
-//
-//   Widget _buildSvgWithOverlay() {
-//     return LayoutBuilder(
-//       builder: (context, constraints) {
-//         return InteractiveViewer(
-//           transformationController: _transformationController,
-//           boundaryMargin: const EdgeInsets.all(20),
-//           minScale: 0.3,
-//           maxScale: 5.0,
-//           constrained: false,
-//           child: GestureDetector(
-//             onTapDown: _onSvgTap,
-//             child: Container(
-//               width: constraints.maxWidth > 800 ? constraints.maxWidth : 800,
-//               height: constraints.maxHeight > 800 ? constraints.maxHeight : 800,
-//               child: Stack(
-//                 clipBehavior: Clip.none,
-//                 children: [
-//                   // SVG Background - Center it in the container
-//                   Center(
-//                     child: SizedBox(
-//                       width: 800,
-//                       height: 800,
-//                       child: SvgPicture.string(
-//                         svgData!,
-//                         fit: BoxFit.contain,
-//                       ),
-//                     ),
-//                   ),
-//                   // Line between points
-//                   _buildLine(),
-//                   // Point markers
-//                   if (firstPoint != null)
-//                     _buildPointMarker(firstPoint!, Colors.blue, '1'),
-//                   if (secondPoint != null)
-//                     _buildPointMarker(secondPoint!, Colors.red, '2'),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         );
-//       },
-//     );
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('${widget.buildingName} - Calibration'),
-//         centerTitle: true,
-//         actions: [
-//           if (canSubmit && !isLoading)
-//             IconButton(
-//               onPressed: _submitCalibration,
-//               icon: const Icon(Icons.check_circle, color: Colors.green),
-//             ),
-//         ],
-//       ),
-//       body: Column(
-//         children: [
-//           _buildInstructions(),
-//           Expanded(
-//             child: isLoading
-//                 ? const Center(
-//               child: Column(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 children: [
-//                   CircularProgressIndicator(),
-//                   SizedBox(height: 16),
-//                   Text('Loading...'),
-//                 ],
-//               ),
-//             )
-//                 : svgData == null
-//                 ? const Center(
-//               child: Text('Failed to load floor plan'),
-//             )
-//                 : _buildSvgWithOverlay(),
-//           ),
-//         ],
-//       ),
-//       floatingActionButton: canSubmit && !isLoading
-//           ? FloatingActionButton.extended(
-//         onPressed: _submitCalibration,
-//         icon: const Icon(Icons.done),
-//         label: const Text('Done'),
-//         backgroundColor: Colors.green,
-//       )
-//           : null,
-//     );
-//   }
-// }
-//
-// class LinePainter extends CustomPainter {
-//   final Offset start;
-//   final Offset end;
-//
-//   LinePainter(this.start, this.end);
-//
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final paint = Paint()
-//       ..color = Colors.orange
-//       ..strokeWidth = 3.0
-//       ..style = PaintingStyle.stroke;
-//
-//     canvas.drawLine(start, end, paint);
-//
-//     // Draw distance text at the middle of the line
-//     final midPoint = Offset(
-//       (start.dx + end.dx) / 2,
-//       (start.dy + end.dy) / 2,
-//     );
-//
-//     final distance = ((end - start).distance).toStringAsFixed(1);
-//     final textPainter = TextPainter(
-//       text: TextSpan(
-//         text: '${distance}px',
-//         style: const TextStyle(
-//           color: Colors.orange,
-//           fontSize: 12,
-//           fontWeight: FontWeight.bold,
-//           backgroundColor: Colors.white,
-//         ),
-//       ),
-//       textDirection: TextDirection.ltr,
-//     );
-//
-//     textPainter.layout();
-//     textPainter.paint(
-//       canvas,
-//       Offset(
-//         midPoint.dx - textPainter.width / 2,
-//         midPoint.dy - textPainter.height / 2,
-//       ),
-//     );
-//   }
-//
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-// }
-
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
+import '../../models/Building.dart';
 import '../../services/admin/admin_service.dart';
 import '../../services/admin/calibration_service.dart';
+import '../../widgets/admin_floor_view.dart';
 
 class CalibrationScreen extends StatefulWidget {
-  final String buildingName;
-  final int buildingId;
+  final String svg;
+  final Building building;
 
   const CalibrationScreen({
     super.key,
-    required this.buildingName,
-    required this.buildingId,
+    required this.svg,
+    required this.building,
   });
 
   @override
@@ -488,7 +35,8 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
   @override
   void initState() {
     super.initState();
-    loadSvg();
+    svgData = widget.svg; // Use the SVG passed from the previous screen
+    //loadSvg();
   }
 
   @override
@@ -499,9 +47,9 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
 
   Future<void> loadSvg() async {
 
-    // Load your SVG file here
-    svgData = await rootBundle.loadString('assets/watson.svg');
-    setState(() {});
+    // // Load your SVG file here
+    // svgData = await rootBundle.loadString('assets/MTA_floor1.svg');
+    // setState(() {});
 
 
 
@@ -621,6 +169,11 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
   Future<void> _submitCalibration() async {
     if (!canSubmit || firstPoint == null || secondPoint == null) return;
 
+    // 👇 Print the points
+    print('Submitting calibration:');
+    print('First Point: $firstPoint');
+    print('Second Point: $secondPoint');
+
     setState(() {
       isLoading = true;
     });
@@ -628,8 +181,10 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
     try {
       final distance = double.parse(_distanceController.text.trim());
 
-      final success = await _calibrationService.submitCalibrationData(
-        buildingId: widget.buildingId,
+      final rooms = await _calibrationService.submitCalibrationData(
+        //buildingId: widget.building.buildingId,
+        buildingId: 1, //TODO: Change to actual Id number if needed
+        buildingFloor: 1, // TODO: Change to actual floor number if needed
         firstPoint: firstPoint!,
         secondPoint: secondPoint!,
         distanceInCm: distance,
@@ -639,10 +194,16 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
         isLoading = false;
       });
 
-      if (success) {
+      if (rooms.isNotEmpty) {
         _showSuccessDialog();
         // TODO: Add your code here for what happens after successful submission
         // For example: navigate to next screen, update building data, etc.
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminFloorView(building: widget.building),
+          ),
+        );
 
       } else {
         _showErrorDialog('Failed to submit calibration data. Please try again.');
@@ -911,7 +472,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.buildingName} - Calibration'),
+        title: Text('${widget.building.name} - Calibration'),
         centerTitle: true,
         actions: [
           if (canSubmit && !isLoading)

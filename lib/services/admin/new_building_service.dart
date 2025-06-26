@@ -6,16 +6,44 @@ import '../../models/Building.dart';
 
 class BuildingService {
 
+  // Future<PlatformFile?> pickDwgFile() async {
+  //   final result = await FilePicker.platform.pickFiles(
+  //   );
+  //   if (result != null && result.files.isNotEmpty) {
+  //     return result.files.first;
+  //   }
+  //   return null;
+  // }
   Future<PlatformFile?> pickDwgFile() async {
-    final result = await FilePicker.platform.pickFiles(
-    );
-    if (result != null && result.files.isNotEmpty) {
-      return result.files.first;
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        withData: true, // This is CRUCIAL - loads file bytes into memory
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        PlatformFile file = result.files.first;
+
+        // Double check that bytes were loaded
+        if (file.bytes != null && file.bytes!.isNotEmpty) {
+          print('File selected: ${file.name}');
+          print('File size: ${file.bytes!.length} bytes');
+          return file;
+        } else {
+          print('File bytes are null or empty');
+          return null;
+        }
+      }
+
+      print('No file selected');
+      return null;
+    } catch (e) {
+      print('Error picking file: $e');
+      return null;
     }
-    return null;
   }
 
-  // Replace with your actual API base URL
+// Replace with your actual API base URL
   static const String _baseUrl = 'https://your-api-endpoint.com/api';
 
   // HTTP client instance

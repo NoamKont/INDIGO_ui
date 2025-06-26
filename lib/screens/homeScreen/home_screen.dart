@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadBuildings() async {
-    final result = await HomeService().getALLBuildings();
+    final result = await HomeService().getAllBuildings();
     setState(() {
       buildings = result;
     });

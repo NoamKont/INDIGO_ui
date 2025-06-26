@@ -4,16 +4,17 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:indigo_test/widgets/floor_picker.dart';
 import 'dart:convert';
 
+import '../constants.dart';
+import '../models/Building.dart';
 import '../models/Room.dart';
+import '../services/general.dart';
 
 class AdminFloorView extends StatefulWidget {
-  final String buildingName;
-  final int buildingId;
+  final Building building;
 
   const AdminFloorView({
     super.key,
-    required this.buildingName,
-    required this.buildingId,
+    required this.building,
   });
 
   @override
@@ -23,6 +24,7 @@ class AdminFloorView extends StatefulWidget {
 class _AdminFloorViewState extends State<AdminFloorView> {
   int selectedFloor = 1;
   String? svgData;
+  //List<Room>? doors;
   final TransformationController _transformationController = TransformationController();
   bool canContinue = false;
   Room? selectedRoom;
@@ -114,9 +116,14 @@ class _AdminFloorViewState extends State<AdminFloorView> {
 
   Future<void> loadSvg() async {
     try {
-      // Load your SVG file here
-      svgData = await rootBundle.loadString('assets/watson.svg');
-      print('Floor confirmed: $selectedFloor');
+      final url = Uri.parse(Constants.getBuildingSvg);
+      svgData = await GeneralService.sendSvgRequest(url: url,
+          method: "GET",
+          queryParams: {
+            //'buildingId': widget.buildingId.toString(),
+            'buildingId': "15",
+            'floor': selectedFloor.toString(),
+          });
       setState(() {});
 
     // final Uint8List? bytes = await AdminService.loadAdminSvgWithCache(widget.buildingId); // <- adjust class name
@@ -135,6 +142,28 @@ class _AdminFloorViewState extends State<AdminFloorView> {
       print('Error loading SVG: $e');
     }
   }
+
+  // Future<void> loadDoors() async {
+  //   try {
+  //     final url = Uri.parse(Constants.getBuildingSvg);
+  //     doors = await GeneralService.getDoors(url: url,
+  //         method: "GET",
+  //         queryParams: {
+  //           //'buildingId': widget.buildingId.toString(),
+  //           'buildingId': "15",
+  //           'floor': selectedFloor.toString(),
+  //         });
+  //     setState(() {});
+  //
+  //     // Reset the transformation to show the full SVG initially
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       _transformationController.value = Matrix4.identity();
+  //     });
+  //   } catch (e) {
+  //     print('Error loading SVG: $e');
+  //   }
+  // }
+
 
   void _onDoorTap(Room room) {
     print('Room ${room.id} selected');
@@ -197,22 +226,6 @@ class _AdminFloorViewState extends State<AdminFloorView> {
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          //const Text('Floor: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          // DropdownButton<int>(
-          //   value: selectedFloor,
-          //   items: List.generate(10, (index) => index + 1)
-          //       .map((floor) => DropdownMenuItem(
-          //     value: floor,
-          //     child: Text('Floor $floor'),
-          //   ))
-          //       .toList(),
-          //   onChanged: (value) {
-          //     if (value != null) {
-          //       setState(() => selectedFloor = value);
-          //       loadSvg();
-          //     }
-          //   },
-          // ),
           FloorPickerButton(numberOfFloors: 10,
             selectedFloor: selectedFloor,
             onFloorSelected: (value) {
@@ -308,10 +321,8 @@ class _AdminFloorViewState extends State<AdminFloorView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.buildingName),
+        title: Text(widget.building.name),
         centerTitle: true,
-        // backgroundColor: Color(0xFF225FFF),
-        // foregroundColor: Colors.white,
         actions: [
           if (canContinue)
             IconButton(
@@ -328,24 +339,14 @@ class _AdminFloorViewState extends State<AdminFloorView> {
         children: [
           _buildFloorPicker(),
           Expanded(
-            child: svgData == null
-                ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading floor plan...'),
-                ],
-              ),
-            )
-                : _buildSvgWithOverlay(),
+            child: _buildSvgWithOverlay(),
           ),
         ],
       ),
       floatingActionButton: canContinue
           ? FloatingActionButton.extended(
         onPressed: () {
+
           // Handle continue action
           showDialog(
             context: context,

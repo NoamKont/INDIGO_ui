@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:indigo_test/constants.dart';
 import 'package:indigo_test/services/admin/admin_service.dart';
+import 'package:indigo_test/services/general.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:flutter/services.dart' show rootBundle, Uint8List;
 import 'dart:convert';
 
+import '../../models/Building.dart';
 import '../../models/Room.dart';
 import '../../services/user/home_screen_service.dart';
 import '../../widgets/bottom_search_bar.dart';
@@ -14,9 +17,22 @@ import '../../widgets/floor_picker.dart';
 
 
 class UserFloorView extends StatefulWidget {
-  final String buildingName;
-  final int buildingId;
+  final Building building;
 
+
+
+  UserFloorView({
+    super.key,
+    required this.building,
+  });
+
+  @override
+  State<UserFloorView> createState() => _UserFloorViewState();
+}
+
+class _UserFloorViewState extends State<UserFloorView> {
+  int selectedFloor = 1;
+  String? svgData;
   final List<String> places = [
     'Museum',
     'Gas Station',
@@ -28,21 +44,6 @@ class UserFloorView extends StatefulWidget {
     'Cafe',
   ];
 
-  UserFloorView({
-    super.key,
-    required this.buildingName,
-    required this.buildingId,
-  });
-
-  @override
-  State<UserFloorView> createState() => _UserFloorViewState();
-}
-
-class _UserFloorViewState extends State<UserFloorView> {
-  int selectedFloor = 1;
-
-  String? svgData;
-
   @override
   void initState() {
     super.initState();
@@ -50,17 +51,15 @@ class _UserFloorViewState extends State<UserFloorView> {
   }
 
   Future<void> loadSvg() async {
-    svgData = await rootBundle.loadString('assets/userExample.svg');//TODO delete this line when you have the actual SVG file
-    print('Floor confirmed: $selectedFloor');
-    setState(() {});
+      final url = Uri.parse(Constants.getBuildingSvg);
+      svgData = await GeneralService.sendSvgRequest(url: url,
+          method: "GET",
+          queryParams: {
+            'buildingId': widget.building.buildingId.toString(),
+            'floor': selectedFloor.toString(),
+          });
+      setState(() {});
 
-    // final Uint8List? bytes = await HomeService.loadUserSvgWithCache(widget.buildingId, selectedFloor); // <- adjust class name
-    // if (bytes == null) return;
-    //
-    // final String svgString = utf8.decode(bytes);
-    // setState(() {
-    //   svgData = svgString;
-    // });
   }
 
 
@@ -75,7 +74,18 @@ class _UserFloorViewState extends State<UserFloorView> {
     // Apply the navigation data to update svgData
     if (destination != null && destination.isNotEmpty) {
       if (currentLocation != null && currentLocation.isNotEmpty) {
-        svgData = await rootBundle.loadString('assets/userExample.svg');//TODO delete this line when you have the actual SVG file
+        final url = Uri.parse(Constants.getRoute);
+        svgData = await GeneralService.sendSvgRequest(url: url,
+            method: "GET",
+            queryParams: {
+              //'buildingId': widget.buildingId.toString(),
+              'buildingId': "15",
+              'floor': selectedFloor.toString(),
+              'start': destination,
+              'goal': currentLocation,
+
+            });
+        //svgData = await rootBundle.loadString('assets/userExample.svg');//TODO delete this line when you have the actual SVG file
         setState(() {});
       }
     }
@@ -85,7 +95,7 @@ class _UserFloorViewState extends State<UserFloorView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.buildingName),
+        title: Text(widget.building.name),
         centerTitle: true,
       ),
       body: Stack(
@@ -118,7 +128,7 @@ class _UserFloorViewState extends State<UserFloorView> {
             alignment: Alignment.bottomCenter,
             child: NavigationBottomSheet(
               onNavigationPressed: onNavigationDataReceived,
-              places: widget.places,
+              places: places,
             ),
           ),
         ],

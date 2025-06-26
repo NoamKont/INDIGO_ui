@@ -3,10 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class CalibrationService {
-  // TODO: Replace with your actual API base URL
-  static const String _baseUrl = 'https://your-api-base-url.com/api';
+import '../../constants.dart';
+import '../../models/Room.dart';
 
+class CalibrationService {
   // TODO: Add your authentication headers if needed
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
@@ -16,72 +16,74 @@ class CalibrationService {
 
   /// Loads SVG file for the specified building
   /// GET /buildings/{buildingId}/svg
-  Future<String> loadSvgFile(int buildingId) async {
-    try {
-      final url = Uri.parse('$_baseUrl/buildings/$buildingId/svg');
-
-      print('Loading SVG from: $url');
-
-      final response = await http.get(
-        url,
-        headers: _headers,
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timeout: Failed to load SVG file');
-        },
-      );
-
-      if (response.statusCode == 200) {
-        // Check if response is SVG content
-        final contentType = response.headers['content-type'] ?? '';
-        if (contentType.contains('image/svg+xml') || contentType.contains('text/xml')) {
-          return response.body;
-        } else {
-          // If response is JSON with SVG data
-          final Map<String, dynamic> jsonData = json.decode(response.body);
-          if (jsonData.containsKey('svg_data')) {
-            return jsonData['svg_data'] as String;
-          } else if (jsonData.containsKey('data')) {
-            return jsonData['data'] as String;
-          } else {
-            throw Exception('Invalid response format: SVG data not found');
-          }
-        }
-      } else if (response.statusCode == 404) {
-        throw Exception('SVG file not found for building ID: $buildingId');
-      } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized: Please check your authentication');
-      } else if (response.statusCode == 403) {
-        throw Exception('Forbidden: You don\'t have permission to access this resource');
-      } else {
-        throw Exception('Failed to load SVG: ${response.statusCode} - ${response.reasonPhrase}');
-      }
-    } catch (e) {
-      print('Error in loadSvgFile: $e');
-      if (e.toString().contains('SocketException') || e.toString().contains('Connection')) {
-        throw Exception('Network error: Please check your internet connection');
-      }
-      rethrow;
-    }
-  }
+  // Future<String> loadSvgFile(int buildingId) async {
+  //   try {
+  //     final url = Uri.parse('$_baseUrl/buildings/$buildingId/svg');
+  //
+  //     print('Loading SVG from: $url');
+  //
+  //     final response = await http.get(
+  //       url,
+  //       headers: _headers,
+  //     ).timeout(
+  //       const Duration(seconds: 30),
+  //       onTimeout: () {
+  //         throw Exception('Request timeout: Failed to load SVG file');
+  //       },
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       // Check if response is SVG content
+  //       final contentType = response.headers['content-type'] ?? '';
+  //       if (contentType.contains('image/svg+xml') || contentType.contains('text/xml')) {
+  //         return response.body;
+  //       } else {
+  //         // If response is JSON with SVG data
+  //         final Map<String, dynamic> jsonData = json.decode(response.body);
+  //         if (jsonData.containsKey('svg_data')) {
+  //           return jsonData['svg_data'] as String;
+  //         } else if (jsonData.containsKey('data')) {
+  //           return jsonData['data'] as String;
+  //         } else {
+  //           throw Exception('Invalid response format: SVG data not found');
+  //         }
+  //       }
+  //     } else if (response.statusCode == 404) {
+  //       throw Exception('SVG file not found for building ID: $buildingId');
+  //     } else if (response.statusCode == 401) {
+  //       throw Exception('Unauthorized: Please check your authentication');
+  //     } else if (response.statusCode == 403) {
+  //       throw Exception('Forbidden: You don\'t have permission to access this resource');
+  //     } else {
+  //       throw Exception('Failed to load SVG: ${response.statusCode} - ${response.reasonPhrase}');
+  //     }
+  //   } catch (e) {
+  //     print('Error in loadSvgFile: $e');
+  //     if (e.toString().contains('SocketException') || e.toString().contains('Connection')) {
+  //       throw Exception('Network error: Please check your internet connection');
+  //     }
+  //     rethrow;
+  //   }
+  // }
 
   /// Submits calibration data (two points and distance)
   /// POST /buildings/{buildingId}/calibration
-  Future<bool> submitCalibrationData({
+  Future<List<Room>> submitCalibrationData({
     required int buildingId,
+    required int buildingFloor,
     required Offset firstPoint,
     required Offset secondPoint,
     required double distanceInCm,
   }) async {
     try {
-      final url = Uri.parse('$_baseUrl/buildings/$buildingId/calibration');
+      final url = Uri.parse(Constants.calibrateFloorPlan);
 
       // Calculate pixel distance for reference
       final pixelDistance = (secondPoint - firstPoint).distance;
 
       final requestBody = {
         'building_id': buildingId,
+        'floor' : buildingFloor,
         'calibration_data': {
           'first_point': {
             'x': firstPoint.dx,
@@ -105,7 +107,7 @@ class CalibrationService {
         headers: _headers,
         body: json.encode(requestBody),
       ).timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 90),
         onTimeout: () {
           throw Exception('Request timeout: Failed to submit calibration data');
         },
@@ -113,20 +115,7 @@ class CalibrationService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('Calibration data submitted successfully');
-
-        // Optional: Handle response data
-        try {
-          final Map<String, dynamic> responseData = json.decode(response.body);
-          print('Server response: $responseData');
-
-          // TODO: Handle successful response data if needed
-          // For example: store calibration ID, update local cache, etc.
-
-        } catch (e) {
-          print('Response parsing error (non-critical): $e');
-        }
-
-        return true;
+        return _parseUploadResponse(response.body);
       } else if (response.statusCode == 400) {
         final errorData = _parseErrorResponse(response.body);
         throw Exception('Bad request: ${errorData['message'] ?? 'Invalid calibration data'}');
@@ -151,20 +140,44 @@ class CalibrationService {
     }
   }
 
+  List<Room> _parseUploadResponse(String body) {
+    final json = jsonDecode(body);
+    final doorsJson = json['doors'] as List;
+
+    final doors = doorsJson.map((d) {
+      return Room(
+        id: d['id'],
+        x: (d['x'] as num).toDouble(),
+        y: (d['y'] as num).toDouble(),
+      );
+    }).toList();
+
+    if (doors.isEmpty) {
+      throw Exception('No doors found in the response');
+    }
+
+    if (json['buildingId'] == null) {
+      throw Exception('Building ID not found in the response');
+    }
+
+    return doors;
+  }
+
+
   /// Alternative method to load SVG with caching (similar to your AdminService pattern)
   /// This method can be used if you want to implement local caching
-  Future<Uint8List?> loadSvgWithCache(int buildingId) async {
-    try {
-      // TODO: Implement caching logic here if needed
-      // For example: check local cache first, then fetch from server
-
-      final svgString = await loadSvgFile(buildingId);
-      return Uint8List.fromList(utf8.encode(svgString));
-    } catch (e) {
-      print('Error in loadSvgWithCache: $e');
-      return null;
-    }
-  }
+  // Future<Uint8List?> loadSvgWithCache(int buildingId) async {
+  //   try {
+  //     // TODO: Implement caching logic here if needed
+  //     // For example: check local cache first, then fetch from server
+  //
+  //     final svgString = await loadSvgFile(buildingId);
+  //     return Uint8List.fromList(utf8.encode(svgString));
+  //   } catch (e) {
+  //     print('Error in loadSvgWithCache: $e');
+  //     return null;
+  //   }
+  // }
 
   /// Parses error response from server
   Map<String, dynamic> _parseErrorResponse(String responseBody) {
@@ -177,43 +190,43 @@ class CalibrationService {
 
   /// Optional: Get calibration data for a building
   /// GET /buildings/{buildingId}/calibration
-  Future<Map<String, dynamic>?> getCalibrationData(int buildingId) async {
-    try {
-      final url = Uri.parse('$_baseUrl/buildings/$buildingId/calibration');
-
-      final response = await http.get(
-        url,
-        headers: _headers,
-      ).timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else if (response.statusCode == 404) {
-        return null; // No calibration data found
-      } else {
-        throw Exception('Failed to get calibration data: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error in getCalibrationData: $e');
-      return null;
-    }
-  }
+  // Future<Map<String, dynamic>?> getCalibrationData(int buildingId) async {
+  //   try {
+  //     final url = Uri.parse('$_baseUrl/buildings/$buildingId/calibration');
+  //
+  //     final response = await http.get(
+  //       url,
+  //       headers: _headers,
+  //     ).timeout(const Duration(seconds: 15));
+  //
+  //     if (response.statusCode == 200) {
+  //       return json.decode(response.body) as Map<String, dynamic>;
+  //     } else if (response.statusCode == 404) {
+  //       return null; // No calibration data found
+  //     } else {
+  //       throw Exception('Failed to get calibration data: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     print('Error in getCalibrationData: $e');
+  //     return null;
+  //   }
+  // }
 
   /// Optional: Delete calibration data
   /// DELETE /buildings/{buildingId}/calibration
-  Future<bool> deleteCalibrationData(int buildingId) async {
-    try {
-      final url = Uri.parse('$_baseUrl/buildings/$buildingId/calibration');
-
-      final response = await http.delete(
-        url,
-        headers: _headers,
-      ).timeout(const Duration(seconds: 15));
-
-      return response.statusCode == 200 || response.statusCode == 204;
-    } catch (e) {
-      print('Error in deleteCalibrationData: $e');
-      return false;
-    }
-  }
+  // Future<bool> deleteCalibrationData(int buildingId) async {
+  //   try {
+  //     final url = Uri.parse('$_baseUrl/buildings/$buildingId/calibration');
+  //
+  //     final response = await http.delete(
+  //       url,
+  //       headers: _headers,
+  //     ).timeout(const Duration(seconds: 15));
+  //
+  //     return response.statusCode == 200 || response.statusCode == 204;
+  //   } catch (e) {
+  //     print('Error in deleteCalibrationData: $e');
+  //     return false;
+  //   }
+  // }
 }
