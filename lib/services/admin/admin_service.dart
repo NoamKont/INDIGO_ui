@@ -4,7 +4,6 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/http.dart' as http;
 import 'package:indigo_test/models/Building.dart';
 import 'package:http_parser/http_parser.dart';
-
 import '../../models/Room.dart'; // For MediaType
 
 
@@ -72,7 +71,7 @@ class AdminService {
 
 
   /// Fetches the SVG file **THAT THE ADMIN GETS** and can manage the labels and add nodes.
-  static Future<Uint8List?> loadAdminSvgWithCache(int buildingId) async {
+  static Future<Uint8List?> loadAdminSvgWithCache(int buildingId, int floorNumber) async {
     //final svgUrl = "http://your-api.com/buildings/$buildingId" ;
     final svgUrl = "https://www.svgrepo.com/download/533811/donuts-cake.svg" ;
     try {

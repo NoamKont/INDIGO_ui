@@ -3,19 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/Building.dart';
 
-// }
-// class NewBuildingService {
-//
-//   Future<PlatformFile?> pickDwgFile() async {
-//     final result = await FilePicker.platform.pickFiles(
-//     );
-//     if (result != null && result.files.isNotEmpty) {
-//       return result.files.first;
-//     }
-//     return null;
-//   }
-
-
 
 class BuildingService {
 

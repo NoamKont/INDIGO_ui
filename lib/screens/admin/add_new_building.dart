@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/admin/new_building_service.dart';
+import '../../services/admin/new_building_service.dart';
 
 class AddNewBuildingScreen extends StatefulWidget {
   const AddNewBuildingScreen({super.key});

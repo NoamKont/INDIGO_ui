@@ -6,6 +6,7 @@ import 'package:indigo_test/screens/user/navigate_screen.dart';
 
 import '../../services/admin/new_building_service.dart';
 import '../../widgets/admin_floor_view.dart';
+import 'calibration_screen.dart';
 
 class AdminBuildingCard extends StatelessWidget {
   final Building building;
@@ -93,6 +94,10 @@ class _MoreOptionsMenu extends StatelessWidget {
           child: _MenuItemWithIcon(icon: Icons.edit, text: 'Edit Floors'),
         ),
         const PopupMenuItem(
+          value: 'calibrate',
+          child: _MenuItemWithIcon(icon: Icons.compass_calibration, text: 'Calibrate floor plan'),
+        ),
+        const PopupMenuItem(
           value: 'delete',
           child: _MenuItemWithIcon(icon: Icons.delete, text: 'Delete Building'),
         ),
@@ -131,6 +136,18 @@ class _MoreOptionsMenu extends StatelessWidget {
             const SnackBar(content: Text('No file selected')),
           );
         }
+        break;
+        case 'calibrate':
+        // Navigate to calibration screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CalibrationScreen(
+                buildingName: building.name,
+                buildingId: building.buildingId,
+              ),
+            ),
+          );
         break;
     }
   }
