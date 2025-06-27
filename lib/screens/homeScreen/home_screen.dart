@@ -3,7 +3,7 @@ import 'package:indigo_test/services/user/home_screen_service.dart';
 import '../../models/Building.dart';
 import '../../widgets/google_map.dart';
 import '../../widgets/menu_bar.dart';
-import 'building_card.dart';
+import '../user/building_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadBuildings() async {
-    final result = await HomeService().getALLBuildings();
+    final result = await HomeService().getAllBuildings();
     setState(() {
       buildings = result;
     });

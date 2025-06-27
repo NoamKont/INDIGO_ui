@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:indigo_test/screens/admin/yaml_form_screen.dart';
+import 'package:indigo_test/services/admin/admin_service.dart';
 import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
 
-import 'manage_building_screen.dart';
+import '../../services/admin/new_building_service.dart';
+import '../../widgets/admin_floor_view.dart';
+import 'calibration_screen.dart';
+import 'dart:typed_data';
 
 class AdminBuildingCard extends StatelessWidget {
   final Building building;
@@ -25,22 +30,9 @@ class AdminBuildingCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SvgZoomView(buildingName: building.name, buildingId: building.buildingId),
+              builder: (context) => AdminFloorView(building: building ),
             ),
           );
-          // final svgBytes = await FloorService.fetchSvgFromUrlWithCache(building.buildingId);
-          // if (svgBytes != null) {
-          //   Navigator.push(
-          //     context,
-          //     MaterialPageRoute(
-          //       builder: (_) => SvgZoomViewFromBytes(svgBytes: svgBytes),
-          //     ),
-          //   );
-          // } else {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     const SnackBar(content: Text("Failed to load floorplan")),
-          //   );
-          // }
         },
         leading: Container(
           width: 40,
@@ -62,17 +54,19 @@ class AdminBuildingCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(building.address),
-        trailing: _MoreOptionsMenu(),
+        trailing: _MoreOptionsMenu(building: building,),
       ),
     );
   }
 }
 
 class _MoreOptionsMenu extends StatelessWidget {
+  final Building building;
 
   const _MoreOptionsMenu({
-    Key? key
-  }) : super(key: key);
+    super.key,
+    required this.building,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +75,16 @@ class _MoreOptionsMenu extends StatelessWidget {
       onSelected: (value) => _handleSelection(context, value),
       itemBuilder: (BuildContext context) => [
         const PopupMenuItem(
+          value: 'add',
+          child: _MenuItemWithIcon(icon: Icons.add, text: 'Add Floor'),
+        ),
+        const PopupMenuItem(
           value: 'edit',
           child: _MenuItemWithIcon(icon: Icons.edit, text: 'Edit Floors'),
+        ),
+        const PopupMenuItem(
+          value: 'calibrate',
+          child: _MenuItemWithIcon(icon: Icons.compass_calibration, text: 'Calibrate floor plan'),
         ),
         const PopupMenuItem(
           value: 'delete',
@@ -92,7 +94,7 @@ class _MoreOptionsMenu extends StatelessWidget {
     );
   }
 
-  void _handleSelection(BuildContext context, String value) {
+  Future<void> _handleSelection(BuildContext context, String value) async {
     switch (value) {
       case 'edit':
         ScaffoldMessenger.of(context).showSnackBar(
@@ -103,6 +105,109 @@ class _MoreOptionsMenu extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Delete pressed')),
         );
+        break;
+      case 'add':
+        try {
+          final file = await BuildingService().pickDwgFile();
+
+          if (file == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No file selected or could not read file')),
+            );
+            return;
+          }
+
+          print('File picked successfully: ${file.name}, Size: ${file.bytes!.length}');
+
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => YamlDetailsForm(dwgFile: file.name),
+            ),
+          );
+
+          if (result != null && result is YamlFormResult) {
+            final yaml = result.yaml;
+            final floorNumber = result.floorNumber;
+
+            print('Floor Number: $floorNumber');
+            print('YAML: $yaml');
+
+            // Show progress dialog
+            showDialog(
+              context: context,
+              barrierDismissible: false, // Prevent dismissing by tapping outside
+              builder: (BuildContext dialogContext) {
+                return WillPopScope(
+                  onWillPop: () async => false, // Prevent back button from closing dialog
+                  child: AlertDialog(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Processing DXF file...'),
+                        SizedBox(height: 8),
+                        Text(
+                          'This may take a few moments',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+
+            try {
+              final svgString = await AdminService.uploadDxfAndYaml(
+                fileName: file.name,
+                fileBytes: file.bytes!,
+                yaml: yaml,
+              );
+
+              // Close progress dialog
+              Navigator.of(context).pop();
+
+              // Navigate to calibration screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CalibrationScreen(
+                    svg: svgString,
+                    building: building,
+                    floor: floorNumber,
+                  ),
+                ),
+              );
+            } catch (e) {
+              // Close progress dialog first
+              Navigator.of(context).pop();
+
+              print('Upload error: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error uploading file: ${e.toString()}')),
+              );
+            }
+          }
+        } catch (e) {
+          print('File picker error: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error selecting file: ${e.toString()}')),
+          );
+        }
+        break;
+        case 'calibrate':
+        // Navigate to calibration screen
+        //   Navigator.push(
+        //     context,
+        //     MaterialPageRoute(
+        //       builder: (context) => CalibrationScreen(
+        //         buildingName: building.name,
+        //         buildingId: building.buildingId,
+        //       ),
+        //     ),
+        //   );
         break;
     }
   }

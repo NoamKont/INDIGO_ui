@@ -4,6 +4,7 @@ import 'package:indigo_test/services/admin/admin_service.dart';
 import '../../models/Building.dart';
 import '../../services/admin/new_building_service.dart';
 import '../../screens/admin/yaml_form_screen.dart';
+import 'add_new_building.dart';
 import 'admin_building_card.dart';
 
 
@@ -120,24 +121,18 @@ class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
   }
 
   Future<void> _handleAddBuilding(BuildContext context) async {
-    final file = await NewBuildingService().pickDwgFile();
-    if (file != null) {
-      final yaml = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => YamlDetailsForm(dwgFile: file),
-        ),
-      );
-      if (yaml != null) {
-        print('YAML returned:');
-        print(yaml);
-        // TODO: Send YAML and DWG to server
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddNewBuildingScreen(),
+      ),
+    ).then((newBuilding) {
+      if (newBuilding != null) {
+        // Handle the newly created building
+        // Add it to your buildings list and refresh UI
+        _loadBuildings();
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No file selected')),
-      );
-    }
+    });
   }
 
 
