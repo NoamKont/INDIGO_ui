@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../models/Room.dart';
+
 
 class GeneralService {
 
 
-  static Future<String> sendSvgRequest({
+  Future<String> sendSvgRequest({
     required Uri url,
     required String method,
     Map<String, String>? headers,
@@ -75,4 +77,71 @@ class GeneralService {
     }
   }
 
+  Future<List<String>> fetchRoomsNameFromFloor({
+  required Uri url,
+  Map<String, String>? queryParams,
+  Duration timeout = const Duration(seconds: 30)}) async {
+    try {
+
+      final finalUrl = queryParams != null
+          ? url.replace(queryParameters: queryParams)
+          : url;
+
+      // Send HTTP GET request
+      final response = await http
+          .get(finalUrl)
+          .timeout(timeout);
+
+
+      // Check if request was successful
+      if (response.statusCode == 200) {
+        // Parse JSON response
+        final List<dynamic> jsonData = json.decode(response.body);
+
+        // Extract names from each object in the array
+        final List<String> names = jsonData
+            .map((item) => item['name'] as String)
+            .toList();
+
+        return names;
+      } else {
+        throw Exception('Failed to load data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching names: $e');
+    }
+  }
+
+  Future<List<Room>> fetchRoomsFromFloor({
+    required Uri url,
+    Map<String, String>? queryParams,
+    Duration timeout = const Duration(seconds: 30)}) async {
+    try {
+      final finalUrl = queryParams != null
+          ? url.replace(queryParameters: queryParams)
+          : url;
+
+      // Send HTTP GET request
+      final response = await http
+          .get(finalUrl)
+          .timeout(timeout);
+
+      // Check if request was successful
+      if (response.statusCode == 200) {
+        // Parse JSON response
+        final List<dynamic> jsonData = json.decode(response.body);
+
+        // Convert each JSON object to Room instance
+        final List<Room> rooms = jsonData
+            .map((json) => Room.fromJson(json as Map<String, dynamic>))
+            .toList();
+
+        return rooms;
+      } else {
+        throw Exception('Failed to load rooms: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching rooms: $e');
+    }
+  }
 }

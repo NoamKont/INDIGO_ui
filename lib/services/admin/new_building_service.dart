@@ -6,14 +6,6 @@ import '../../models/Building.dart';
 
 class BuildingService {
 
-  // Future<PlatformFile?> pickDwgFile() async {
-  //   final result = await FilePicker.platform.pickFiles(
-  //   );
-  //   if (result != null && result.files.isNotEmpty) {
-  //     return result.files.first;
-  //   }
-  //   return null;
-  // }
   Future<PlatformFile?> pickDwgFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(

@@ -30,22 +30,9 @@ class AdminBuildingCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AdminFloorView(building: building, ),
+              builder: (context) => AdminFloorView(building: building ),
             ),
           );
-          // final svgBytes = await FloorService.fetchSvgFromUrlWithCache(building.buildingId);
-          // if (svgBytes != null) {
-          //   Navigator.push(
-          //     context,
-          //     MaterialPageRoute(
-          //       builder: (_) => SvgZoomViewFromBytes(svgBytes: svgBytes),
-          //     ),
-          //   );
-          // } else {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     const SnackBar(content: Text("Failed to load floorplan")),
-          //   );
-          // }
         },
         leading: Container(
           width: 40,
@@ -132,16 +119,19 @@ class _MoreOptionsMenu extends StatelessWidget {
 
           print('File picked successfully: ${file.name}, Size: ${file.bytes!.length}');
 
-          final yaml = await Navigator.push(
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => YamlDetailsForm(dwgFile: file.name),
             ),
           );
 
-          if (yaml != null) {
-            print('YAML returned:');
-            print(yaml);
+          if (result != null && result is YamlFormResult) {
+            final yaml = result.yaml;
+            final floorNumber = result.floorNumber;
+
+            print('Floor Number: $floorNumber');
+            print('YAML: $yaml');
 
             // Show progress dialog
             showDialog(
@@ -186,6 +176,7 @@ class _MoreOptionsMenu extends StatelessWidget {
                   builder: (context) => CalibrationScreen(
                     svg: svgString,
                     building: building,
+                    floor: floorNumber,
                   ),
                 ),
               );

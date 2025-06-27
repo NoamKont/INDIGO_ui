@@ -24,4 +24,14 @@ class Room {
   String get buildingName {
     return floor?.building?.name ?? 'Unknown'; // Return 'Unknown' if building is null
   }
+
+  factory Room.fromJson(Map<String, dynamic> json) {
+    return Room(
+      id: json['id'] as int,
+      x: (json['scale_coord'][0] as num).toDouble(),
+      y: (json['scale_coord'][1] as num).toDouble(),
+      name: json['name'] as String?,
+      floor: null, // Set this based on your needs
+    );
+  }
 }

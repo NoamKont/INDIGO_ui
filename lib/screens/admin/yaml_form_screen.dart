@@ -1,6 +1,15 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+// Class to hold both values
+class YamlFormResult {
+  final String yaml;
+  final int floorNumber;
+
+  YamlFormResult({required this.yaml, required this.floorNumber});
+}
+
+
 class YamlDetailsForm extends StatefulWidget {
   final String dwgFile;
 
@@ -108,8 +117,12 @@ class _YamlDetailsFormState extends State<YamlDetailsForm> {
         floorNumber: _floorNumberController.text,
       );
 
+      final floorNumber = int.tryParse(_floorNumberController.text) ?? 1;
       // Send yaml + file to server here
-      Navigator.pop(context, yaml);
+      Navigator.pop(context, YamlFormResult(
+          yaml: yaml,
+          floorNumber: floorNumber
+      ));
     }
   }
 

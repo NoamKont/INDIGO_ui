@@ -33,7 +33,8 @@ class UserFloorView extends StatefulWidget {
 class _UserFloorViewState extends State<UserFloorView> {
   int selectedFloor = 1;
   String? svgData;
-  final List<String> places = [
+  final GeneralService generalService = GeneralService();
+  List<String> places = [
     'Museum',
     'Gas Station',
     'Supermarket',
@@ -48,11 +49,12 @@ class _UserFloorViewState extends State<UserFloorView> {
   void initState() {
     super.initState();
     loadSvg();
+    loadRoomsName();
   }
 
   Future<void> loadSvg() async {
       final url = Uri.parse(Constants.getBuildingSvg);
-      svgData = await GeneralService.sendSvgRequest(url: url,
+      svgData = await generalService.sendSvgRequest(url: url,
           method: "GET",
           queryParams: {
             'buildingId': widget.building.buildingId.toString(),
@@ -61,7 +63,19 @@ class _UserFloorViewState extends State<UserFloorView> {
       setState(() {});
 
   }
-
+  Future<void> loadRoomsName() async {
+    try {
+      final url = Uri.parse(Constants.getDoorsName);
+      places = await generalService.fetchRoomsNameFromFloor(url: url,
+          queryParams: {
+            'buildingId': widget.building.buildingId.toString(),
+            'floor': selectedFloor.toString(),
+          });
+      setState(() {});
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
 
   void onNavigationDataReceived(Map<String, dynamic> navigationData) async{
     String? destination = navigationData['destination'];
@@ -74,12 +88,12 @@ class _UserFloorViewState extends State<UserFloorView> {
     // Apply the navigation data to update svgData
     if (destination != null && destination.isNotEmpty) {
       if (currentLocation != null && currentLocation.isNotEmpty) {
+
         final url = Uri.parse(Constants.getRoute);
-        svgData = await GeneralService.sendSvgRequest(url: url,
+        svgData = await generalService.sendSvgRequest(url: url,
             method: "GET",
             queryParams: {
-              //'buildingId': widget.buildingId.toString(),
-              'buildingId': "15",
+              'buildingId': widget.building.buildingId.toString(),
               'floor': selectedFloor.toString(),
               'start': destination,
               'goal': currentLocation,
@@ -107,7 +121,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                 child: Row(
                   children: [
                     FloorPickerButton(
-                      numberOfFloors: 10,
+                      numberOfFloors: widget.building.numberOfFloors,
                       selectedFloor: selectedFloor,
                       onFloorSelected: (value) {
                         setState(() => selectedFloor = value);

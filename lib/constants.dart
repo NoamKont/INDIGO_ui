@@ -24,8 +24,16 @@ class Constants {
   static const String getBuildingRouteSvg = "$fullServerPath/building/svg/route/get";
 
   static const String updateDoorsName = "$fullServerPath/building/doors/update";
-  static const String getDoorsName = "$fullServerPath/building/doors";
+  static const String getDoorsName = "$fullServerPath/doors/getAll";
 
-  static const String calibrateFloorPlan = "$fullServerPath/building/add2";
+  static const String calibrateFloorPlan = "$fullServerPath/building/calibrate";
   static const String getRoute = "$fullServerPath/building/route/get";
+
+  static const Map<String, String> headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    // Add authentication headers if needed
+    // 'Authorization': 'Bearer $token',
+  };
+
 }

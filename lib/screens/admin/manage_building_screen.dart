@@ -133,24 +133,6 @@ class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
         _loadBuildings();
       }
     });
-    // final file = await BuildingService().pickDwgFile();
-    // if (file != null) {
-    //   final yaml = await Navigator.push(
-    //     context,
-    //     MaterialPageRoute(
-    //       builder: (_) => YamlDetailsForm(dwgFile: file),
-    //     ),
-    //   );
-    //   if (yaml != null) {
-    //     print('YAML returned:');
-    //     print(yaml);
-    //     // TODO: Send YAML and DWG to server
-    //   }
-    // } else {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text('No file selected')),
-    //   );
-    // }
   }
 
 

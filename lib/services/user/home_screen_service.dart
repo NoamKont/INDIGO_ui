@@ -38,7 +38,7 @@ class HomeService {
           final id = int.parse(idStr.toString());
           return Building(
             buildingId: id,
-            name: 'Building ${String.fromCharCode(65 + ids.indexOf(idStr))}', // A, B, C...
+            name: 'Building $id',
             address: 'Tel-Aviv',
           );
         }).toList();

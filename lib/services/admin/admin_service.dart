@@ -5,13 +5,18 @@ import 'package:http/http.dart' as http;
 import 'package:indigo_test/constants.dart';
 import 'package:indigo_test/models/Building.dart';
 import 'package:http_parser/http_parser.dart';
-import '../../models/Room.dart'; // For MediaType
+import '../../models/Room.dart';
+import '../user/home_screen_service.dart'; // For MediaType
 
 
 class AdminService {
 
   /// This methods get the building list that the admin owns.
   Future<List<Building>> getUserBuildings() async {
+
+    //TODO: Implement the actual API call to fetch buildings for the admin.
+    return await HomeService().getAllBuildings();
+
     List<Building> buildings = [];
 
     buildings.addAll([

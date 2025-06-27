@@ -9,11 +9,13 @@ import '../../widgets/admin_floor_view.dart';
 class CalibrationScreen extends StatefulWidget {
   final String svg;
   final Building building;
+  final int floor;
 
   const CalibrationScreen({
     super.key,
     required this.svg,
     required this.building,
+    required this.floor,
   });
 
   @override
@@ -45,37 +47,6 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
     super.dispose();
   }
 
-  Future<void> loadSvg() async {
-
-    // // Load your SVG file here
-    // svgData = await rootBundle.loadString('assets/MTA_floor1.svg');
-    // setState(() {});
-
-
-
-    // setState(() {
-    //   isLoading = true;
-    // });
-    //
-    // try {
-    //   final svgString = await AdminService.loadAdminSvgWithCache(widget.buildingId, 1); //TODO floor number change
-    //   setState(() {
-    //     svgData = svgString;
-    //     isLoading = false;
-    //   });
-    //
-    //   // Reset the transformation to show the full SVG initially
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     _transformationController.value = Matrix4.identity();
-    //   });
-    // } catch (e) {
-    //   print('Error loading SVG: $e');
-    //   setState(() {
-    //     isLoading = false;
-    //   });
-    //   _showErrorDialog('Failed to load floor plan. Please try again.');
-    // }
-  }
 
   void _onSvgTap(TapDownDetails details) {
     // Only allow tapping when in calibrate mode
@@ -184,7 +155,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
       final rooms = await _calibrationService.submitCalibrationData(
         //buildingId: widget.building.buildingId,
         buildingId: 1, //TODO: Change to actual Id number if needed
-        buildingFloor: 1, // TODO: Change to actual floor number if needed
+        buildingFloor: widget.floor,
         firstPoint: firstPoint!,
         secondPoint: secondPoint!,
         distanceInCm: distance,
@@ -201,7 +172,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AdminFloorView(building: widget.building),
+            builder: (context) => AdminFloorView(building: widget.building,selectedFloor: widget.floor,),
           ),
         );
 
