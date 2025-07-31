@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:indigo_test/services/user/home_screen_service.dart';
+import '../../main.dart';
 import '../../models/Building.dart';
 import '../../widgets/google_map.dart';
 import '../../widgets/menu_bar.dart';
@@ -12,13 +13,31 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   List<Building> buildings = [];
 
   @override
   void initState() {
     super.initState();
     _loadBuildings();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    // Unsubscribe when widget is removed
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    _loadBuildings(); // ⬅ reload buildings
   }
 
   @override

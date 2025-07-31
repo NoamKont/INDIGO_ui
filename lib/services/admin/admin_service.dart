@@ -13,21 +13,10 @@ class AdminService {
 
   /// This methods get the building list that the admin owns.
   Future<List<Building>> getUserBuildings() async {
-
-    //TODO: Implement the actual API call to fetch buildings for the admin.
     return await HomeService().getAllBuildings();
-
-    List<Building> buildings = [];
-
-    buildings.addAll([
-      Building(buildingId: 1, name: 'Building A', address: 'Location A'),
-      Building(buildingId: 2, name: 'Building B', address: 'Location B'),
-      Building(buildingId: 3, name: 'Building C', address: 'Location C')
-    ]);
-    return buildings;
   }
 
-  static Future<String> uploadDxfAndYaml({required String fileName, required Uint8List fileBytes, required String yaml,}) async
+  static Future<String> uploadDxfAndYaml({required String fileName ,required int buildingId ,required int floorId ,required Uint8List fileBytes, required String yaml,}) async
   {
     try{
       final uri = Uri.parse(Constants.newFloor);
@@ -45,7 +34,8 @@ class AdminService {
           filename: 'config.yaml',
           contentType: MediaType('text', 'plain'),
         ))
-        ..fields['buildingId'] = '15'; //TODO talk to omri delete this requirement
+        ..fields['floorId'] = floorId.toString()
+        ..fields['buildingId'] = buildingId.toString();
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();

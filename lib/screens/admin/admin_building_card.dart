@@ -162,6 +162,8 @@ class _MoreOptionsMenu extends StatelessWidget {
             try {
               final svgString = await AdminService.uploadDxfAndYaml(
                 fileName: file.name,
+                buildingId: building.buildingId,
+                floorId: floorNumber,
                 fileBytes: file.bytes!,
                 yaml: yaml,
               );

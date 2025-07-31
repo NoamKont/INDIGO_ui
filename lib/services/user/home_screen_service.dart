@@ -7,23 +7,6 @@ import '../../models/Building.dart';
 
 class HomeService {
 
-  /// This methods get ALL the building List that the in the DATABASE.
-  // Future<List<Building>> getALLBuildings() async {
-  //   List<Building> buildings = [];
-  //
-  //
-  //
-  //
-  //   buildings.addAll([
-  //     Building(buildingId: 1, name: 'Watson', address: 'Tel-Aviv'),
-  //     Building(buildingId: 2, name: 'Psychology', address: 'Tel-Aviv'),
-  //     Building(buildingId: 3, name: 'Engineering', address: 'Tel-Aviv'),
-  //     Building(buildingId: 4, name: 'Finance', address: 'Tel-Aviv'),
-  //     Building(buildingId: 5, name: 'Communication', address: 'Tel-Aviv'),
-  //   ]);
-  //   return buildings;
-  // }
-
   Future<List<Building>> getAllBuildings() async {
     final url = Uri.parse(Constants.getAllBuildingsNames); // Replace with your actual endpoint
 
@@ -31,15 +14,21 @@ class HomeService {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final List<dynamic> ids = jsonDecode(response.body);
+        final List<dynamic> jsonList = jsonDecode(response.body);
 
-        // Create dummy metadata for each ID (in real case, fetch details or map by ID)
-        final buildings = ids.map<Building>((idStr) {
-          final id = int.parse(idStr.toString());
+          final buildings = jsonList.map<Building>((item) {
+          final id = item['id'] ?? 0;
+          final name = item['name'] ?? 'Building $id';
+          final city = item['city'] ?? '';
+          final street = item['address'] ?? '';
+          final floorList = (item['floors'] as List<dynamic>).map<int>((f) => f as int).toList();
+
+
           return Building(
             buildingId: id,
-            name: 'Building $id',
-            address: 'Tel-Aviv',
+            name: name,
+            city: city,
+            address: street, // Combine street and city for address
           );
         }).toList();
 

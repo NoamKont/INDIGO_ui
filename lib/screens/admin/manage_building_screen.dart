@@ -126,8 +126,8 @@ class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
       MaterialPageRoute(
         builder: (context) => const AddNewBuildingScreen(),
       ),
-    ).then((newBuilding) {
-      if (newBuilding != null) {
+    ).then((status) {
+      if (status == 201) {
         // Handle the newly created building
         // Add it to your buildings list and refresh UI
         _loadBuildings();

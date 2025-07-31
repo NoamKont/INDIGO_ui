@@ -83,7 +83,7 @@ class CalibrationService {
 
       final requestBody = {
         'building_id': buildingId,
-        'floor' : buildingFloor,
+        'floor_id' : buildingFloor,
         'calibration_data': {
           'first_point': {
             'x': firstPoint.dx,

@@ -153,8 +153,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
       final distance = double.parse(_distanceController.text.trim());
 
       final rooms = await _calibrationService.submitCalibrationData(
-        //buildingId: widget.building.buildingId,
-        buildingId: 1, //TODO: Change to actual Id number if needed
+        buildingId: widget.building.buildingId,
         buildingFloor: widget.floor,
         firstPoint: firstPoint!,
         secondPoint: secondPoint!,

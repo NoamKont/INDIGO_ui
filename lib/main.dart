@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:indigo_test/screens/homeScreen/home_screen.dart';
 import 'screens/login/login_screen.dart';
+
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 void main() {
   runApp(const MyApp());
@@ -32,8 +35,8 @@ class MyApp extends StatelessWidget {
         ),
         iconTheme: IconThemeData(color: primaryColor),
       ),
-      //home: LoginScreen(),
-      home: LoginScreen(),
+      home: HomeScreen(),
+      navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
     );
   }

@@ -58,7 +58,7 @@ class _UserFloorViewState extends State<UserFloorView> {
           method: "GET",
           queryParams: {
             'buildingId': widget.building.buildingId.toString(),
-            'floor': selectedFloor.toString(),
+            'floorId': selectedFloor.toString(),
           });
       setState(() {});
 
@@ -69,7 +69,7 @@ class _UserFloorViewState extends State<UserFloorView> {
       places = await generalService.fetchRoomsNameFromFloor(url: url,
           queryParams: {
             'buildingId': widget.building.buildingId.toString(),
-            'floor': selectedFloor.toString(),
+            'floorId': selectedFloor.toString(),
           });
       setState(() {});
     } catch (e) {
@@ -94,7 +94,7 @@ class _UserFloorViewState extends State<UserFloorView> {
             method: "GET",
             queryParams: {
               'buildingId': widget.building.buildingId.toString(),
-              'floor': selectedFloor.toString(),
+              'floorId': selectedFloor.toString(),
               'start': destination,
               'goal': currentLocation,
 

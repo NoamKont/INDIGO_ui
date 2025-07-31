@@ -92,7 +92,7 @@ class _AdminFloorViewState extends State<AdminFloorView> {
       final fetchedDoors = await generalService.fetchRoomsFromFloor(url: url,
           queryParams: {
             'buildingId': widget.building.buildingId.toString(),
-            'floor': selectedFloor.toString(),
+            'floorId': selectedFloor.toString(),
           });
 
       setState(() {

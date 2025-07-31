@@ -39,18 +39,19 @@ class _AddNewBuildingScreenState extends State<AddNewBuildingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final building = await _buildingService.createBuilding(
+      final status = await _buildingService.createBuilding(
         name: _buildingNameController.text.trim(),
-        address: _fullAddress,
+        city: _cityController.text.trim(),
+        address: _streetController.text.trim()
       );
 
       if (mounted) {
         // Return the created building to the previous screen
-        Navigator.pop(context, building);
+        Navigator.pop(context, status);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Building "${building.name}" created successfully!'),
+            content: Text('Building "${_buildingNameController.text}" created successfully!'),
             backgroundColor: Colors.green,
           ),
         );

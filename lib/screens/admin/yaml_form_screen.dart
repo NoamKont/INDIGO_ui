@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 // Class to hold both values
 class YamlFormResult {
@@ -144,6 +145,9 @@ class _YamlDetailsFormState extends State<YamlDetailsForm> {
                   controller: _floorNumberController,
                   decoration: const InputDecoration(labelText: 'Floor Number'),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                 ),
                 TextFormField(

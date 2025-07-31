@@ -1,10 +1,23 @@
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../constants.dart';
 import '../../models/Building.dart';
 
 
 class BuildingService {
+
+  // Replace with your actual API base URL
+  static const String _baseUrl = 'https://your-api-endpoint.com/api';
+
+  // HTTP client instance
+  final http.Client _client = http.Client();
+
+  // Headers for API requests
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
   Future<PlatformFile?> pickDwgFile() async {
     try {
@@ -35,94 +48,35 @@ class BuildingService {
     }
   }
 
-// Replace with your actual API base URL
-  static const String _baseUrl = 'https://your-api-endpoint.com/api';
-
-  // HTTP client instance
-  final http.Client _client = http.Client();
-
-  // Headers for API requests
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    // Add authentication headers if needed
-    // 'Authorization': 'Bearer $token',
-  };
 
   /// Creates a new building
   ///
   /// Sends a POST request to create a building with the provided name and address
   /// Returns the created Building object with the assigned buildingId
-  Future<Building> createBuilding({
+  Future<int> createBuilding({
     required String name,
+    required String city,
     required String address,
   }) async {
     try {
-      final url = Uri.parse('$_baseUrl/buildings');
-
-      final requestBody = {
-        'name': name,
-        'address': address,
-      };
+      final url = Uri.parse(Constants.newBuilding).replace(
+        queryParameters: {
+          'name': name,
+          'city': city,
+          'address': address,
+        },
+      );
 
       final response = await _client.post(
         url,
         headers: _headers,
-        body: json.encode(requestBody),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-
-        // Assuming the API returns the building data in this format:
-        // {
-        //   "id": 123,
-        //   "name": "Building Name",
-        //   "address": "Street, City"
-        // }
-
-        return Building(
-          buildingId: responseData['id'] ?? responseData['buildingId'],
-          name: responseData['name'],
-          address: responseData['address'],
-        );
+        return response.statusCode;
       } else {
         throw BuildingServiceException(
           'Failed to create building: ${response.statusCode} - ${response.reasonPhrase}',
-        );
-      }
-    } on http.ClientException catch (e) {
-      throw BuildingServiceException('Network error: ${e.message}');
-    } on FormatException catch (e) {
-      throw BuildingServiceException('Invalid response format: ${e.message}');
-    } catch (e) {
-      throw BuildingServiceException('Unexpected error: ${e.toString()}');
-    }
-  }
-
-  /// Fetches all buildings
-  ///
-  /// Returns a list of all buildings from the server
-  Future<List<Building>> getAllBuildings() async {
-    try {
-      final url = Uri.parse('$_baseUrl/buildings');
-
-      final response = await _client.get(
-        url,
-        headers: _headers,
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> responseData = json.decode(response.body);
-
-        return responseData.map((buildingJson) => Building(
-          buildingId: buildingJson['id'] ?? buildingJson['buildingId'],
-          name: buildingJson['name'],
-          address: buildingJson['address'],
-        )).toList();
-      } else {
-        throw BuildingServiceException(
-          'Failed to fetch buildings: ${response.statusCode} - ${response.reasonPhrase}',
         );
       }
     } on http.ClientException catch (e) {
@@ -162,6 +116,7 @@ class BuildingService {
         return Building(
           buildingId: responseData['id'] ?? responseData['buildingId'],
           name: responseData['name'],
+          city: responseData['city'],
           address: responseData['address'],
         );
       } else {
