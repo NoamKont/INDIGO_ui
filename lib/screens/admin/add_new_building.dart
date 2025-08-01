@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_places_flutter/google_places_flutter.dart';
+import 'package:google_places_flutter/model/place_type.dart';
+import 'package:google_places_flutter/model/prediction.dart';
 import '../../services/admin/new_building_service.dart';
 
 class AddNewBuildingScreen extends StatefulWidget {
@@ -9,28 +12,39 @@ class AddNewBuildingScreen extends StatefulWidget {
 }
 
 class _AddNewBuildingScreenState extends State<AddNewBuildingScreen> {
+  late final FocusNode _buildingNameFocusNode;
+  late final FocusNode _cityFocusNode;
+  late final FocusNode _streetFocusNode;
+
   final _formKey = GlobalKey<FormState>();
   final _buildingNameController = TextEditingController();
   final _cityController = TextEditingController();
   final _streetController = TextEditingController();
   final BuildingService _buildingService = BuildingService();
+  //TODO change this to your actual Google API key
+  static const String _googleApiKey = "";
 
   bool _isLoading = false;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _buildingNameFocusNode = FocusNode();
+    _cityFocusNode         = FocusNode();
+    _streetFocusNode       = FocusNode();
+  }
 
   @override
   void dispose() {
     _buildingNameController.dispose();
     _cityController.dispose();
     _streetController.dispose();
+
+    _buildingNameFocusNode.dispose();
+    _cityFocusNode.dispose();
+    _streetFocusNode.dispose();
     super.dispose();
-  }
-
-  String get _fullAddress => '${_streetController.text.trim()}, ${_cityController.text.trim()}';
-
-  bool get _isFormValid {
-    return _buildingNameController.text.trim().isNotEmpty &&
-        _cityController.text.trim().isNotEmpty &&
-        _streetController.text.trim().isNotEmpty;
   }
 
   Future<void> _createBuilding() async {
@@ -42,16 +56,14 @@ class _AddNewBuildingScreenState extends State<AddNewBuildingScreen> {
       final status = await _buildingService.createBuilding(
         name: _buildingNameController.text.trim(),
         city: _cityController.text.trim(),
-        address: _streetController.text.trim()
+        address: _streetController.text.trim(),
       );
 
       if (mounted) {
-        // Return the created building to the previous screen
         Navigator.pop(context, status);
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Building "${_buildingNameController.text}" created successfully!'),
+          const SnackBar(
+            content: Text('Building created successfully!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -60,182 +72,183 @@ class _AddNewBuildingScreenState extends State<AddNewBuildingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create building: ${e.toString()}'),
+            content: Text('Failed to create building: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Add New Building'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: const Color(0xFF4F46E5),
+        foregroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        title: const Text('Add New Building'),
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 20),
 
-              // Building Name Field
-              _buildInputField(
-                controller: _buildingNameController,
-                label: 'Building Name *',
-                hint: 'Enter building name',
-                icon: Icons.business,
-                validator: (value) {
-                  if (value?.trim().isEmpty ?? true) {
-                    return 'Building name is required';
-                  }
-                  return null;
-                },
-              ),
+                // 1️⃣ Building Name
+                TextFormField(
+                  focusNode: _buildingNameFocusNode,
+                  controller: _buildingNameController,
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  decoration: InputDecoration(
+                    labelText: 'Building Name *',
+                    hintText: 'Enter building name',
+                    prefixIcon: const Icon(Icons.business),
+                    filled: true,
+                    fillColor: Colors.blue.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.blue.shade100),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                      const BorderSide(color: Color(0xFF4F46E5), width: 2),
+                    ),
+                  ),
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // City Field
-              _buildInputField(
-                controller: _cityController,
-                label: 'City *',
-                hint: 'Enter city name',
-                icon: Icons.location_city,
-                validator: (value) {
-                  if (value?.trim().isEmpty ?? true) {
-                    return 'City is required';
-                  }
-                  return null;
-                },
-              ),
+                // 2️⃣ City (Places autocomplete)
+                GooglePlaceAutoCompleteTextField(
+                  focusNode: _cityFocusNode,
+                  textEditingController: _cityController,
+                  googleAPIKey: _googleApiKey,
+                  debounceTime: 800,
+                  countries: ['il'],
+                  placeType: PlaceType.cities,
+                  isLatLngRequired: false,
+                  inputDecoration: InputDecoration(
+                    labelText: 'City *',
+                    hintText: 'Search for city in Israel',
+                    prefixIcon: const Icon(Icons.location_city),
+                    filled: true,
+                    fillColor: Colors.blue.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.blue.shade100),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                      const BorderSide(color: Color(0xFF4F46E5), width: 2),
+                    ),
+                  ),
+                  itemClick: (Prediction p) {
+                    final city = p.structuredFormatting?.mainText ?? '';
+                    _cityController.text = city;
+                    FocusScope.of(context).requestFocus(_streetFocusNode);
+                  },
+                  isCrossBtnShown: false,
+                  seperatedBuilder: Divider(color: Colors.grey.shade300, height: 1),
+                  itemBuilder: (context, index, Prediction p) => ListTile(
+                    leading: const Icon(Icons.location_city, size: 20),
+                    title: Text(
+                      p.structuredFormatting?.mainText
+                          ?? p.description ?? '',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    subtitle: p.structuredFormatting?.secondaryText != null
+                        ? Text(
+                      p.structuredFormatting!.secondaryText!,
+                      style: const TextStyle(fontSize: 12),
+                    )
+                        : null,
+                  ),
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Street Field
-              _buildInputField(
-                controller: _streetController,
-                label: 'Street Address *',
-                hint: 'Enter street address',
-                icon: Icons.place,
-                validator: (value) {
-                  if (value?.trim().isEmpty ?? true) {
-                    return 'Street address is required';
-                  }
-                  return null;
-                },
-              ),
+                // 3️⃣ Street (Places autocomplete)
+                GooglePlaceAutoCompleteTextField(
+                  focusNode: _streetFocusNode,
+                  textEditingController: _streetController,
+                  googleAPIKey: _googleApiKey,
+                  debounceTime: 800,
+                  isLatLngRequired: false,
+                  countries: ['il'],
+                  placeType: PlaceType.address, // only addresses
+                  inputDecoration: InputDecoration(
+                    labelText: 'Street Address *',
+                    hintText: 'Enter street address',
+                    prefixIcon: const Icon(Icons.place),
+                    filled: true,
+                    fillColor: Colors.blue.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.blue.shade100),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                      const BorderSide(color: Color(0xFF4F46E5), width: 2),
+                    ),
+                  ),
+                  itemClick: (Prediction p) {
+                    final street = p.structuredFormatting?.mainText ?? '';
+                    _streetController.text = street;
+                    FocusScope.of(context).unfocus();
+                  },
+                  isCrossBtnShown: false,
+                  seperatedBuilder: Divider(color: Colors.grey.shade300, height: 1),
+                  itemBuilder: (context, index, Prediction p) => ListTile(
+                    leading: const Icon(Icons.place, size: 20),
+                    title: Text(
+                      p.structuredFormatting?.mainText ?? '',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
 
-              const SizedBox(height: 40),
 
-              // Done Button
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
+                const SizedBox(height: 40),
+
+                ElevatedButton(
                   onPressed: _isLoading ? null : _createBuilding,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4F46E5),
                     foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                      : const Text(
-                    'Done',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Done', style: TextStyle(fontSize: 16)),
                 ),
-              ),
 
-              const SizedBox(height: 20),
-
-              // Required fields note
-              const Text(
-                '* Required fields',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
+                const SizedBox(height: 16),
+                const Text(
+                  '* Required fields',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          validator: validator,
-          onChanged: (_) => setState(() {}), // Update button state
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: Icon(icon, color: Colors.grey.shade600),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            filled: true,
-            fillColor: Colors.grey.shade50,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-      ],
     );
   }
 }

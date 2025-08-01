@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:indigo_test/services/admin/admin_service.dart';
 import 'package:indigo_test/widgets/floor_picker.dart';
 import 'dart:convert';
 
@@ -26,13 +27,15 @@ class AdminFloorView extends StatefulWidget {
 class _AdminFloorViewState extends State<AdminFloorView> {
   late int selectedFloor = 1;
   String? svgData;
-  final GeneralService generalService = GeneralService();
   List<Room>? doors;
-  final TransformationController _transformationController = TransformationController();
   bool canContinue = false;
   Room? selectedRoom;
+  bool isLoading = true;
+
+  final TransformationController _transformationController = TransformationController();
   final TextEditingController _roomNameController = TextEditingController();
-  bool isLoading = true; // Add loading state
+  final GeneralService generalService = GeneralService();
+
 
   @override
   void initState() {
@@ -74,7 +77,7 @@ class _AdminFloorViewState extends State<AdminFloorView> {
           method: "GET",
           queryParams: {
             'buildingId': widget.building.buildingId.toString(),
-            'floor': selectedFloor.toString(),
+            'floorId': selectedFloor.toString(),
           });
 
       // Reset the transformation to show the full SVG initially
@@ -328,23 +331,25 @@ class _AdminFloorViewState extends State<AdminFloorView> {
       ),
       floatingActionButton: canContinue
           ? FloatingActionButton.extended(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Success!'),
-              content: const Text('All rooms have been successfully named.'),
-              actions: [
-                TextButton(
-                  onPressed: () =>
-                  //TODO send new names to server
-                  Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+        onPressed: () async {
+          try {
+            await AdminService.updateRoomNames(
+              buildingId: widget.building.buildingId,
+              floorId: selectedFloor,
+              rooms: doors!,
+            );
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Room names updated successfully!')),
+            );
+          } catch (e) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to update room names: $e')),
+            );
+          }
         },
+
         icon: const Icon(Icons.arrow_forward),
         label: const Text('Continue'),
         backgroundColor: Colors.green,
@@ -353,3 +358,6 @@ class _AdminFloorViewState extends State<AdminFloorView> {
     );
   }
 }
+
+
+

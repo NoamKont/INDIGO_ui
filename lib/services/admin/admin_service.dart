@@ -73,6 +73,32 @@ class AdminService {
 
   }
 
+   static Future<void> updateRoomNames({
+    required int buildingId,
+    required int floorId,
+    required List<Room> rooms,
+    }) async {
+    final url = Uri.parse(Constants.updateDoorsName); // Define this constant
+    final body = {
+      'buildingId': buildingId,
+      'floorId': floorId,
+      'rooms': rooms.map((room) => {
+          'id': room.id,
+          'name': room.name ?? '',
+        }).toList(),
+    };
+
+    final response = await http.post(url,
+      headers: {'Content-Type': 'application/json',},
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update room names: ${response.body}');
+    }
+  }
+
+
 
 
   /// Fetches the SVG file **THAT THE ADMIN GETS** and can manage the labels and add nodes.

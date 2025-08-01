@@ -99,7 +99,6 @@ class _UserFloorViewState extends State<UserFloorView> {
               'goal': currentLocation,
 
             });
-        //svgData = await rootBundle.loadString('assets/userExample.svg');//TODO delete this line when you have the actual SVG file
         setState(() {});
       }
     }

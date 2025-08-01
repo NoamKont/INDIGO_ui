@@ -24,13 +24,18 @@ class _NavigationBottomSheetState extends State<NavigationBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
     return DraggableScrollableSheet(
       controller: _controller,
       initialChildSize: 0.12,
       minChildSize: 0.12,
       maxChildSize: 0.35,
       builder: (context, scrollController) {
-        return _buildBottomSheetContainer(scrollController);
+        return Padding(
+          padding: EdgeInsets.only(bottom: bottomInset),
+          child: _buildBottomSheetContainer(scrollController),
+        );
       },
     );
   }

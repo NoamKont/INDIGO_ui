@@ -166,14 +166,13 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
 
       if (rooms.isNotEmpty) {
         _showSuccessDialog();
-        // TODO: Add your code here for what happens after successful submission
-        // For example: navigate to next screen, update building data, etc.
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AdminFloorView(building: widget.building,selectedFloor: widget.floor,),
-          ),
-        );
+        //TODO if there is problem it here
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => AdminFloorView(building: widget.building,selectedFloor: widget.floor,),
+        //   ),
+        // );
 
       } else {
         _showErrorDialog('Failed to submit calibration data. Please try again.');
@@ -199,8 +198,12 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
                 // TODO: Add your code here for what happens after user clicks "Done"
-                // For example: navigate back, show next step, etc.
-                // Navigator.of(context).pushReplacement(...);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AdminFloorView(building: widget.building,selectedFloor: widget.floor,),
+                  ),
+                );
               },
               child: const Text('Done'),
             ),

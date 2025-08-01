@@ -168,8 +168,6 @@ class CalibrationService {
   /// This method can be used if you want to implement local caching
   // Future<Uint8List?> loadSvgWithCache(int buildingId) async {
   //   try {
-  //     // TODO: Implement caching logic here if needed
-  //     // For example: check local cache first, then fetch from server
   //
   //     final svgString = await loadSvgFile(buildingId);
   //     return Uint8List.fromList(utf8.encode(svgString));

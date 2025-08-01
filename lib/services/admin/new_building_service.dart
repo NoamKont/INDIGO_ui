@@ -88,74 +88,74 @@ class BuildingService {
     }
   }
 
-  /// Updates an existing building
-  ///
-  /// Sends a PUT request to update building information
-  Future<Building> updateBuilding({
-    required int buildingId,
-    required String name,
-    required String address,
-  }) async {
-    try {
-      final url = Uri.parse('$_baseUrl/buildings/$buildingId');
-
-      final requestBody = {
-        'name': name,
-        'address': address,
-      };
-
-      final response = await _client.put(
-        url,
-        headers: _headers,
-        body: json.encode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-
-        return Building(
-          buildingId: responseData['id'] ?? responseData['buildingId'],
-          name: responseData['name'],
-          city: responseData['city'],
-          address: responseData['address'],
-        );
-      } else {
-        throw BuildingServiceException(
-          'Failed to update building: ${response.statusCode} - ${response.reasonPhrase}',
-        );
-      }
-    } on http.ClientException catch (e) {
-      throw BuildingServiceException('Network error: ${e.message}');
-    } on FormatException catch (e) {
-      throw BuildingServiceException('Invalid response format: ${e.message}');
-    } catch (e) {
-      throw BuildingServiceException('Unexpected error: ${e.toString()}');
-    }
-  }
-
-  /// Deletes a building
-  ///
-  /// Sends a DELETE request to remove a building
-  Future<void> deleteBuilding(int buildingId) async {
-    try {
-      final url = Uri.parse('$_baseUrl/buildings/$buildingId');
-
-      final response = await _client.delete(
-        url,
-        headers: _headers,
-      );
-
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw BuildingServiceException(
-          'Failed to delete building: ${response.statusCode} - ${response.reasonPhrase}',
-        );
-      }
-    } on http.ClientException catch (e) {
-      throw BuildingServiceException('Network error: ${e.message}');
-    } catch (e) {
-      throw BuildingServiceException('Unexpected error: ${e.toString()}');
-    }
-  }
+  // /// Updates an existing building
+  // ///
+  // /// Sends a PUT request to update building information
+  // Future<Building> updateBuilding({
+  //   required int buildingId,
+  //   required String name,
+  //   required String address,
+  // }) async {
+  //   try {
+  //     final url = Uri.parse('$_baseUrl/buildings/$buildingId');
+  //
+  //     final requestBody = {
+  //       'name': name,
+  //       'address': address,
+  //     };
+  //
+  //     final response = await _client.put(
+  //       url,
+  //       headers: _headers,
+  //       body: json.encode(requestBody),
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       final responseData = json.decode(response.body);
+  //
+  //       return Building(
+  //         buildingId: responseData['id'] ?? responseData['buildingId'],
+  //         name: responseData['name'],
+  //         city: responseData['city'],
+  //         address: responseData['address'],
+  //       );
+  //     } else {
+  //       throw BuildingServiceException(
+  //         'Failed to update building: ${response.statusCode} - ${response.reasonPhrase}',
+  //       );
+  //     }
+  //   } on http.ClientException catch (e) {
+  //     throw BuildingServiceException('Network error: ${e.message}');
+  //   } on FormatException catch (e) {
+  //     throw BuildingServiceException('Invalid response format: ${e.message}');
+  //   } catch (e) {
+  //     throw BuildingServiceException('Unexpected error: ${e.toString()}');
+  //   }
+  // }
+  //
+  // /// Deletes a building
+  // ///
+  // /// Sends a DELETE request to remove a building
+  // Future<void> deleteBuilding(int buildingId) async {
+  //   try {
+  //     final url = Uri.parse('$_baseUrl/buildings/$buildingId');
+  //
+  //     final response = await _client.delete(
+  //       url,
+  //       headers: _headers,
+  //     );
+  //
+  //     if (response.statusCode != 200 && response.statusCode != 204) {
+  //       throw BuildingServiceException(
+  //         'Failed to delete building: ${response.statusCode} - ${response.reasonPhrase}',
+  //       );
+  //     }
+  //   } on http.ClientException catch (e) {
+  //     throw BuildingServiceException('Network error: ${e.message}');
+  //   } catch (e) {
+  //     throw BuildingServiceException('Unexpected error: ${e.toString()}');
+  //   }
+  // }
 
   /// Disposes the HTTP client
   void dispose() {

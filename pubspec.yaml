@@ -39,6 +39,9 @@ dependencies:
   vector_math: ^2.1.4
   sensors_plus: ^6.1.1
   wifi_scan: ^0.4.1
+  google_places_flutter: ^2.1.0
+  flutter_dotenv: ^5.2.1
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
