@@ -33,6 +33,7 @@ class UserFloorView extends StatefulWidget {
 class _UserFloorViewState extends State<UserFloorView> {
   int selectedFloor = 1;
   String? svgData;
+  List<int> floorsList = [];
   final GeneralService generalService = GeneralService();
   List<String> places = [
     'Museum',
@@ -50,10 +51,36 @@ class _UserFloorViewState extends State<UserFloorView> {
     super.initState();
     loadSvg();
     loadRoomsName();
+    loadFloorsList();
+  }
+
+  Future<void> loadFloorsList() async {
+    try {
+      final list = await generalService.getFloors(
+        buildingId: widget.building.buildingId,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        floorsList = list;
+        // pick first floor as default, if there is one
+        if (list.isNotEmpty) {
+          selectedFloor = list.first;
+        }
+      });
+
+      // now that we have a floor, load its SVG & rooms
+      if (floorsList.isNotEmpty) {
+        await loadSvg();
+        await loadRoomsName();
+      }
+    } catch (e) {
+      debugPrint('Error loading floor list: $e');
+    }
   }
 
   Future<void> loadSvg() async {
-      final url = Uri.parse(Constants.getBuildingSvg);
+      final url = Uri.parse(Constants.getFloorSvg);
       svgData = await generalService.sendSvgRequest(url: url,
           method: "GET",
           queryParams: {
@@ -120,7 +147,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                 child: Row(
                   children: [
                     FloorPickerButton(
-                      numberOfFloors: widget.building.numberOfFloors,
+                      floorsList: floorsList,
                       selectedFloor: selectedFloor,
                       onFloorSelected: (value) {
                         setState(() => selectedFloor = value);

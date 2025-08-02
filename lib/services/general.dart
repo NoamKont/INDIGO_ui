@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:indigo_test/constants.dart';
 
 import '../models/Room.dart';
 
@@ -142,6 +143,23 @@ class GeneralService {
       }
     } catch (e) {
       throw Exception('Error fetching rooms: $e');
+    }
+  }
+
+  Future<List<int>> getFloors({required int buildingId}) async {
+    final uri = Uri.parse(Constants.getAllFloorsInBuilding).replace(
+      queryParameters: {'buildingId': buildingId.toString()},
+    );
+
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      // Example body: [1,2,3]
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      return jsonList.map((e) => e as int).toList();
+    } else if (response.statusCode == 400) {
+      throw Exception('Missing buildingId');
+    } else {
+      throw Exception('Failed to load floors: ${response.statusCode}');
     }
   }
 }

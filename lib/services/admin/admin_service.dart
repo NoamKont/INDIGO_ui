@@ -80,15 +80,15 @@ class AdminService {
     }) async {
     final url = Uri.parse(Constants.updateDoorsName); // Define this constant
     final body = {
-      'buildingId': buildingId,
+      'buildingID': buildingId,
       'floorId': floorId,
-      'rooms': rooms.map((room) => {
+      'doors': rooms.map((room) => {
           'id': room.id,
           'name': room.name ?? '',
         }).toList(),
     };
 
-    final response = await http.post(url,
+    final response = await http.put(url,
       headers: {'Content-Type': 'application/json',},
       body: jsonEncode(body),
     );

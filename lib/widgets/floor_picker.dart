@@ -1,13 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
 class FloorPickerButton extends StatelessWidget {
   final int selectedFloor;
-  final int numberOfFloors; // Assuming a maximum of 10 floors
+  final List<int> floorsList;
   final ValueChanged<int> onFloorSelected;
 
   const FloorPickerButton({
     super.key,
-    required this.numberOfFloors,
+    required this.floorsList,
     required this.selectedFloor,
     required this.onFloorSelected,
   });
@@ -15,24 +16,31 @@ class FloorPickerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {
-        _showFloorPicker(context);
-      },
+      // disable the button if there's nothing to pick
+      onPressed: floorsList.isEmpty ? null : () => _showFloorPicker(context),
       child: Text('Select Floor: $selectedFloor'),
     );
   }
 
   void _showFloorPicker(BuildContext context) {
-    int tempSelected = selectedFloor;
+    // safety check—shouldn't happen since button is disabled, but just in case
+    if (floorsList.isEmpty) return;
+
+    // find index of the selectedFloor, default to 0 if missing or out of bounds
+    int initialIndex = floorsList.indexOf(selectedFloor);
+    if (initialIndex < 0 || initialIndex >= floorsList.length) {
+      initialIndex = 0;
+    }
+    int tempIndex = initialIndex;
 
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
+      builder: (_) {
         return SizedBox(
           height: 250,
           child: Column(
             children: [
-              // Toolbar with Done button
+              // Done toolbar
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -40,25 +48,24 @@ class FloorPickerButton extends StatelessWidget {
                     child: const Text('Done'),
                     onPressed: () {
                       Navigator.pop(context);
-                      onFloorSelected(tempSelected);
+                      onFloorSelected(floorsList[tempIndex]);
                     },
                   ),
                 ],
               ),
 
-              // Scroll picker
+              // The picker itself
               Expanded(
                 child: CupertinoPicker(
                   scrollController:
-                  FixedExtentScrollController(initialItem: selectedFloor - 1),
+                  FixedExtentScrollController(initialItem: initialIndex),
                   itemExtent: 40,
                   onSelectedItemChanged: (index) {
-                    tempSelected = index + 1;
+                    tempIndex = index;
                   },
-                  children: List.generate(numberOfFloors, (index) {
-                    final floor = index + 1;
-                    return Center(child: Text('Floor $floor'));
-                  }),
+                  children: floorsList
+                      .map((floor) => Center(child: Text('Floor $floor')))
+                      .toList(),
                 ),
               ),
             ],

@@ -107,7 +107,7 @@ class CalibrationService {
         headers: _headers,
         body: json.encode(requestBody),
       ).timeout(
-        const Duration(seconds: 90),
+        const Duration(seconds: 120),
         onTimeout: () {
           throw Exception('Request timeout: Failed to submit calibration data');
         },

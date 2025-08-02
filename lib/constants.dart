@@ -17,18 +17,20 @@ class Constants {
   static const String newFloor = "$fullServerPath/floor/add";
   static const String newBuilding = "$fullServerPath/building/add";
 
-  static const String getBuildingData = "$fullServerPath/building/data/get";
+  static const String getAllFloorsInBuilding = "$fullServerPath/building/getFloors";
 
-  static const String getAllBuildingsNames = "$fullServerPath/buildings/get";
+  static const String getFloorData = "$fullServerPath/floor/getData";
 
-  static const String getBuildingSvg = "$fullServerPath/building/getSvgDirect";
+  static const String getAllBuildingsNames = "$fullServerPath/building/get";
+
+  static const String getFloorSvg = "$fullServerPath/floor/getSvgDirect";
   //static const String getBuildingRouteSvg = "$fullServerPath/building/svg/route/get";
 
-  static const String getDoorsName = "$fullServerPath/doors/getAll";
-  static const String updateDoorsName = "$fullServerPath/building/doors/update";
+  static const String getDoorsName = "$fullServerPath/floor/getDoors";
+  static const String updateDoorsName = "$fullServerPath/floor/updateDoorsNames";
 
   static const String calibrateFloorPlan = "$fullServerPath/floor/calibrate";
-  static const String getRoute = "$fullServerPath/building/route/get";
+  static const String getRoute = "$fullServerPath/floor/route/get";
 
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',
