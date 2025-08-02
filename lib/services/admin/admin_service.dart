@@ -82,11 +82,12 @@ class AdminService {
     final body = {
       'buildingID': buildingId,
       'floorId': floorId,
-      'doors': rooms.map((room) => {
-          'id': room.id,
-          'name': room.name ?? '',
-        }).toList(),
+      'doors': {
+        for (var room in rooms)
+          room.id.toString(): room.name ?? '',
+      },
     };
+
 
     final response = await http.put(url,
       headers: {'Content-Type': 'application/json',},
