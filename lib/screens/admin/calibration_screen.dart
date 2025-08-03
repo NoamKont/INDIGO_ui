@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../models/Building.dart';
 import '../../services/admin/admin_service.dart';
 import '../../services/admin/calibration_service.dart';
-import '../../widgets/admin_floor_view.dart';
+import 'admin_floor_view.dart';
 
 class CalibrationScreen extends StatefulWidget {
   final String svg;

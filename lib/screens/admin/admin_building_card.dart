@@ -6,7 +6,7 @@ import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
 
 import '../../services/admin/new_building_service.dart';
-import '../../widgets/admin_floor_view.dart';
+import 'admin_floor_view.dart';
 import 'calibration_screen.dart';
 import 'dart:typed_data';
 

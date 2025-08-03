@@ -41,6 +41,7 @@ dependencies:
   wifi_scan: ^0.4.1
   google_places_flutter: ^2.1.0
   flutter_dotenv: ^5.2.1
+  xml: ^6.3.0
 
 
   # The following adds the Cupertino Icons font to your application.

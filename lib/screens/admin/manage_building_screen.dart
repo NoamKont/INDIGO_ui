@@ -17,6 +17,7 @@ class ManageBuildingsPage extends StatefulWidget {
 
 class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
   List<Building> buildings = [];
+  bool isLoading = true; // Track loading state
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
               const SizedBox(height: 16),
               _buildExistingBuildingsLabel(),
               const SizedBox(height: 10),
-              _buildBuildingList(),
+              _buildContent(),
               const SizedBox(height: 16),
               _buildAddButton(context),
             ],
@@ -48,10 +49,23 @@ class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
   }
 
   Future<void> _loadBuildings() async {
-    final result = await AdminService().getUserBuildings();
     setState(() {
-      buildings = result;
+      isLoading = true;
     });
+
+    try {
+      final result = await AdminService().getUserBuildings();
+      setState(() {
+        buildings = result;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        buildings = [];
+        isLoading = false;
+      });
+      print('Error loading buildings: $e');
+    }
   }
 
   Widget _buildTopPanel(BuildContext context) {
@@ -94,15 +108,84 @@ class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
     );
   }
 
-  Widget _buildBuildingList() {
+  // Main content area that switches between loading, empty, and list states
+  Widget _buildContent() {
     return Expanded(
-      child: ListView.builder(
+      child: isLoading
+          ? _buildLoadingState()
+          : buildings.isEmpty
+          ? _buildEmptyState()
+          : _buildBuildingList(),
+    );
+  }
+
+  // Loading state
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            strokeWidth: 3,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(context).primaryColor,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Loading Buildings...',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Empty state when no buildings
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.business_outlined,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Buildings Found',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'You haven\'t created any buildings yet.\nTap the button below to add your first building.',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBuildingList() {
+    return ListView.builder(
         itemCount: buildings.length,
         itemBuilder: (context, index) {
           final building = buildings[index];
           return AdminBuildingCard(building: building);
         }
-      ),
     );
   }
 
@@ -134,6 +217,4 @@ class _ManageBuildingsPageState extends State<ManageBuildingsPage> {
       }
     });
   }
-
-
 }
