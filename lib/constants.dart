@@ -24,13 +24,17 @@ class Constants {
   static const String getAllBuildingsNames = "$fullServerPath/building/get";
 
   static const String getFloorSvg = "$fullServerPath/floor/getSvgDirect";
-  //static const String getBuildingRouteSvg = "$fullServerPath/building/svg/route/get";
 
   static const String getDoorsName = "$fullServerPath/floor/getDoors";
   static const String updateDoorsName = "$fullServerPath/floor/updateDoorsNames";
 
   static const String calibrateFloorPlan = "$fullServerPath/floor/calibrate";
   static const String getRoute = "$fullServerPath/floor/route/get";
+
+
+  static const String train = "$fullServerPath/floor/scan";
+
+  static const String getGridSvg = "$fullServerPath/floor/getGridSvg";
 
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',

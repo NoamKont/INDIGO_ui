@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/sensor_data_collector.dart';
+import '../../services/sensor_data_collector.dart';
 
 class FingerprintCollectionScreen extends StatefulWidget {
   @override

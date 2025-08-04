@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indigo_test/screens/data_collection/elecromagnetic.dart';
 import 'package:indigo_test/screens/homeScreen/home_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login/login_screen.dart';

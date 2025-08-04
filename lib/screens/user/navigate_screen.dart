@@ -35,16 +35,7 @@ class _UserFloorViewState extends State<UserFloorView> {
   String? svgData;
   List<int> floorsList = [];
   final GeneralService generalService = GeneralService();
-  List<String> places = [
-    'Museum',
-    'Gas Station',
-    'Supermarket',
-    'Park',
-    'Stadium',
-    'Library',
-    'Hospital',
-    'Cafe',
-  ];
+  List<String> places = [];
 
   @override
   void initState() {

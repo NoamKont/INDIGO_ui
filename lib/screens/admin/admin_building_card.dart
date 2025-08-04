@@ -6,6 +6,7 @@ import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
 
 import '../../services/admin/new_building_service.dart';
+import '../data_collection/elecromagnetic.dart';
 import 'admin_floor_view.dart';
 import 'calibration_screen.dart';
 import 'dart:typed_data';
@@ -75,19 +76,19 @@ class _MoreOptionsMenu extends StatelessWidget {
       onSelected: (value) => _handleSelection(context, value),
       itemBuilder: (BuildContext context) => [
         const PopupMenuItem(
-          value: 'add',
+          value: 'Add',
           child: _MenuItemWithIcon(icon: Icons.add, text: 'Add Floor'),
         ),
         const PopupMenuItem(
-          value: 'edit',
+          value: 'Edit',
           child: _MenuItemWithIcon(icon: Icons.edit, text: 'Edit Floors'),
         ),
         const PopupMenuItem(
-          value: 'calibrate',
+          value: 'Calibrate Location',
           child: _MenuItemWithIcon(icon: Icons.compass_calibration, text: 'Calibrate floor plan'),
         ),
         const PopupMenuItem(
-          value: 'delete',
+          value: 'Delete Building',
           child: _MenuItemWithIcon(icon: Icons.delete, text: 'Delete Building'),
         ),
       ],
@@ -96,17 +97,17 @@ class _MoreOptionsMenu extends StatelessWidget {
 
   Future<void> _handleSelection(BuildContext context, String value) async {
     switch (value) {
-      case 'edit':
+      case 'Edit':
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Edit pressed')),
         );
         break;
-      case 'delete':
+      case 'Delete Building':
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Delete pressed')),
         );
         break;
-      case 'add':
+      case 'Add':
         try {
           final file = await BuildingService().pickDwgFile();
 
@@ -199,17 +200,16 @@ class _MoreOptionsMenu extends StatelessWidget {
           );
         }
         break;
-        case 'calibrate':
-        // Navigate to calibration screen
-        //   Navigator.push(
-        //     context,
-        //     MaterialPageRoute(
-        //       builder: (context) => CalibrationScreen(
-        //         buildingName: building.name,
-        //         buildingId: building.buildingId,
-        //       ),
-        //     ),
-        //   );
+        case 'Calibrate Location':
+        //Navigate to calibration screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MagneticPositioningWithCompass(
+                building: building,
+              ),
+            ),
+          );
         break;
     }
   }
