@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/place_type.dart';
 import 'package:google_places_flutter/model/prediction.dart';
@@ -21,8 +22,10 @@ class _AddNewBuildingScreenState extends State<AddNewBuildingScreen> {
   final _cityController = TextEditingController();
   final _streetController = TextEditingController();
   final BuildingService _buildingService = BuildingService();
+
   //TODO change this to your actual Google API key
-  static const String _googleApiKey = "";
+  static String get _googleApiKey => dotenv.env['GOOGLE_API_KEY'] ?? '';
+  //static const String _googleApiKey = "";
 
   bool _isLoading = false;
 

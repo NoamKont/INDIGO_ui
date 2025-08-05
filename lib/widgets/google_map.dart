@@ -36,6 +36,7 @@ class _MapPageState extends State<MapPage> {
       body: _currentLocation == null
           ? const Center(child: CircularProgressIndicator())
           : GoogleMap(
+        mapType: MapType.normal,
         initialCameraPosition: CameraPosition(
           target: _currentLocation!,
           zoom: 15,

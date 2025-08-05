@@ -1,3 +1,12 @@
+import java.util.Properties
+
+// Load .env file
+val envProperties = Properties()
+val envFile = rootProject.file(".env")
+if (envFile.exists()) {
+    envFile.inputStream().use { envProperties.load(it) }
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,7 +14,6 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
-
 android {
     namespace = "com.example.indigo"
     compileSdk = flutter.compileSdkVersion
@@ -30,6 +38,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         manifestPlaceholders["MAPS_API_KEY"] = project.findProperty("MAPS_API_KEY") ?: "MISSING_KEY"
+        manifestPlaceholders["googleMapsApiKey"] = envProperties.getProperty("GOOGLE_API_KEY", "NO_KEY")
     }
 
     buildTypes {

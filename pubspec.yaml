@@ -75,3 +75,4 @@ flutter:
         - assets/icons/
         - assets/watson.svg
         - assets/userExample.svg
+        - .env
