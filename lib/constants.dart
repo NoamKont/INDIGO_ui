@@ -34,6 +34,8 @@ class Constants {
 
   static const String train = "$fullServerPath/floor/scan";
 
+  static const String getUserLocation = "$fullServerPath/floor/scan";
+
   static const String getGridSvg = "$fullServerPath/floor/getGridSvg";
 
   static const Map<String, String> headers = {
