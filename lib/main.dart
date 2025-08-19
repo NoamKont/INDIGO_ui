@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indigo_test/screens/PdrTestScreen.dart';
 import 'package:indigo_test/screens/data_collection/elecromagnetic.dart';
 import 'package:indigo_test/screens/homeScreen/home_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -39,7 +40,8 @@ class MyApp extends StatelessWidget {
         ),
         iconTheme: IconThemeData(color: primaryColor),
       ),
-      home: HomeScreen(),
+      home: PdrTestScreen(),
+      //home: HomeScreen(),
       navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
     );

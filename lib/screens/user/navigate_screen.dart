@@ -35,6 +35,8 @@ class _UserFloorViewState extends State<UserFloorView> {
   Timer? locationTimer;
   bool isLocationLoading = false;
   bool isTrackingEnabled = false;
+  bool isRouteLoading = false; // <— add
+
 
 
   @override
@@ -98,6 +100,32 @@ class _UserFloorViewState extends State<UserFloorView> {
     } finally {
       if (mounted) setState(() => isLocationLoading = false);
     }
+  }
+  Future<void> _showErrorDialog(String message) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Row(
+            children: const [
+              Icon(Icons.error_outline, color: Colors.red, size: 28),
+              SizedBox(width: 8),
+              Text('Route Error'),
+            ],
+          ),
+          content: SingleChildScrollView(child: Text(message)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _loadFloorsAndData() async {
@@ -184,12 +212,12 @@ class _UserFloorViewState extends State<UserFloorView> {
       print('Parsed SVG dimensions: ${svgWidth}x${svgHeight}');
     } catch (e) {
       print('Error parsing SVG dimensions: $e');
-      // Fallback to default dimensions
       svgWidth = 800;
       svgHeight = 800;
     }
   }
-  void onNavigationDataReceived(Map<String, dynamic> nav) async {
+
+  void onNavigationDataReceived1(Map<String, dynamic> nav) async {
     final dest = nav['destination'] as String?;
     final curr = nav['currentLocation'] as String?;
     if (dest == null || curr == null || dest.isEmpty || curr.isEmpty) return;
@@ -207,6 +235,61 @@ class _UserFloorViewState extends State<UserFloorView> {
     );
     if (mounted) setState(() {});
   }
+
+  void onNavigationDataReceived(Map<String, dynamic> nav) async {
+    final dest = nav['destination'] as String?;
+    final curr = nav['currentLocation'] as String?;
+    if (dest == null || curr == null || dest.isEmpty || curr.isEmpty) return;
+
+    if (!mounted) return;
+    setState(() {
+      isRouteLoading = true;
+      svgData = null; // spinner appears in the map area
+    });
+
+    String? newSvg;
+    String? errorText;
+
+    try {
+      final url = Uri.parse(Constants.getRoute);
+
+      // (Optional) protect against hanging requests
+      newSvg = await generalService
+          .sendSvgRequest(
+        url: url,
+        method: "GET",
+        queryParams: {
+          'buildingId': widget.building.buildingId.toString(),
+          'floorId': selectedFloor.toString(),
+          'start': dest,
+          'goal': curr,
+        },
+      );
+    } on TimeoutException {
+      errorText = 'The routing request timed out. Please try again.';
+    } catch (e) {
+      errorText = 'Failed to fetch route: $e';
+    }
+
+    if (!mounted) return;
+
+    if (errorText != null) {
+      // Show ❌ dialog, then restore the regular (non-routed) floor SVG
+      await _showErrorDialog(errorText);
+      await _loadSvg(); // this also parses dimensions & setStates internally
+    } else {
+      // Success: parse dimensions & show routed SVG
+      _parseSvgDimensions(newSvg!);
+      setState(() {
+        svgData = newSvg;
+      });
+    }
+
+    if (mounted) {
+      setState(() => isRouteLoading = false);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {

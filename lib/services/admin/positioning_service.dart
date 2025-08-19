@@ -65,7 +65,8 @@ class PositioningService {
             return null;
           }
         } else {
-          return UserLocation(x: 213.038, y: 319.85); // Auditorium for now. Indicating no location found
+          //return UserLocation(x: 213.038, y: 319.85); // Auditorium for now. Indicating no location found
+          return UserLocation(x: 213.038, y: 350.85); // Auditorium for now. Indicating no location found
         }
       } else {
         print('HTTP Error: ${response.statusCode} - ${response.body}');
