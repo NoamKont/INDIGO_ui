@@ -6,7 +6,8 @@ import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
 
 import '../../services/admin/new_building_service.dart';
-import '../data_collection/elecromagnetic.dart';
+import '../data_collection/electromagnetic_fingerprint_screen.dart';
+import '../data_collection/wifi_fingerprint_screen.dart';
 import 'admin_floor_view.dart';
 import 'calibration_screen.dart';
 import 'dart:typed_data';
@@ -205,7 +206,10 @@ class _MoreOptionsMenu extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => MagneticPositioningWithCompass(
+              // builder: (context) => MagneticPositioningWithCompass(
+              //   building: building,
+              // ),
+              builder: (context) => WifiCollectionFingerprint(
                 building: building,
               ),
             ),
