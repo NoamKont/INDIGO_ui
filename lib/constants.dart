@@ -33,8 +33,10 @@ class Constants {
 
 
   static const String train = "$fullServerPath/floor/scan";
+  static const String sendFingerprint = "$fullServerPath/floor/scan/upload";
 
-  static const String getUserLocation = "$fullServerPath/floor/scan";
+  static const String getUserLocation = "$fullServerPath/predict/top1";
+  static const String getMetersToPixelScaleUri = "$fullServerPath/floor/getOneCmSvg";
 
   static const String getGridSvg = "$fullServerPath/floor/getGridSvg";
 

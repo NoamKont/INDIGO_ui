@@ -140,7 +140,6 @@ class _WifiCollectionFingerprintState extends State<WifiCollectionFingerprint> {
   Future<void> _saveToCSV(String pointName, Map<String, double> wifiData) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      //final file = File('${directory.path}/wifi_data.csv');
       final file = File('${directory.path}/${widget.building.name}_floor${selectedFloor}.csv');
 
       // Read existing data
@@ -200,9 +199,6 @@ class _WifiCollectionFingerprintState extends State<WifiCollectionFingerprint> {
       await file.writeAsString(csvLines.join('\n'));
 
        print('CSV saved to: ${file.path}');
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text('Data saved to CSV: ${file.path}')),
-      // );
 
     } catch (e) {
       print('Error saving CSV: $e');
@@ -269,14 +265,17 @@ class _WifiCollectionFingerprintState extends State<WifiCollectionFingerprint> {
   }
 
   Future<void> _sendAllData() async {
-    final success = await positioningService.sendData(
-        Constants.train,
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/${widget.building.name}_floor${selectedFloor}.csv');
+
+    final success = await positioningService.sendFingerprint(
+        Constants.sendFingerprint,
+        file,
         widget.building.buildingId,
         selectedFloor,
-        _collectedData
     );
 
-    if (success != null) {
+    if (success == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('WiFi training data sent successfully!')),
       );
@@ -506,13 +505,6 @@ class _WifiCollectionFingerprintState extends State<WifiCollectionFingerprint> {
           ),
         ],
       ),
-      // floatingActionButton: _canScan && !_isScanning
-      //     ? FloatingActionButton(
-      //   onPressed: _scanWiFi,
-      //   tooltip: 'Refresh WiFi Scan',
-      //   child: const Icon(Icons.refresh),
-      // )
-      //     : null,
     );
   }
 }

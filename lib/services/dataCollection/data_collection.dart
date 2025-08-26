@@ -12,8 +12,8 @@ class UserLocation {
 
   factory UserLocation.fromJson(Map<String, dynamic> json) {
     return UserLocation(
-      x: (json['x'] as num).toDouble(),
-      y: (json['y'] as num).toDouble(),
+      x: (json['svgX'] as num).toDouble(),
+      y: (json['svgY'] as num).toDouble(),
     );
   }
 }
