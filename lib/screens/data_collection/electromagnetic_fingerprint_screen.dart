@@ -467,7 +467,7 @@ class _MagneticPositioningWithCompassState extends State<MagneticPositioningWith
   }
 
   Future<void> _sendAllData() async {
-    final success = await positioningService.sendData(
+    final success = await positioningService.sendElectromagnetData(
        Constants.train,
         widget.building.buildingId,
         selectedFloor,

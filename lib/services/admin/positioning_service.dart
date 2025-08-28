@@ -3,16 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:indigo_test/constants.dart';
-import '../dataCollection/data_collection.dart';
+import '../../models/user_location.dart';
 import 'package:http_parser/http_parser.dart' show MediaType;
 
 
-import '../user/home_screen_service.dart'; // For MediaType
-
-
 class PositioningService {
-
-  Future<UserLocation?> sendData(String uri, int buildingId, int floorId, Map<String, Map<String, double>> data) async {
+  //For electromagnetic positioning
+  Future<UserLocation?> sendElectromagnetData(String uri, int buildingId, int floorId, Map<String, Map<String, double>> data) async {
     try {
       final url = Uri.parse(uri);
 
@@ -60,7 +57,8 @@ class PositioningService {
     }
   }
 
-  Future<bool> sendFingerprint(String uri, File csvData, int buildingId,int floorId) async {
+  //For WiFi positioning
+  Future<bool> sendFingerprintCsvFile(String uri, File csvData, int buildingId,int floorId) async {
     try {
       final url = Uri.parse(uri);
       final bytes = await csvData.readAsBytes();
@@ -98,7 +96,6 @@ class PositioningService {
       return false;
     }
   }
-
   Future<UserLocation?> getCurrentLocation(String uri, int buildingId, int floorId, Map<String, int> data) async {
     try {
       final url = Uri.parse(uri);
@@ -122,7 +119,6 @@ class PositioningService {
         // Check if response contains coordinates
         if (responseData.containsKey('svgX') &&
             responseData.containsKey('svgY')) {
-          print(responseData['label']);
           return UserLocation.fromJson(responseData);
         } else {
           print('Server response does not contain location coordinates');
@@ -137,7 +133,6 @@ class PositioningService {
       return null;
     }
   }
-
   Future<double> fetchOneCmSvg(int buildingId, int floorId,) async {
     final uri = Uri.parse(Constants.getMetersToPixelScaleUri).replace(
       queryParameters: {

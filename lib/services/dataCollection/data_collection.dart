@@ -2,21 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-
-// Model for user location coordinates
-class UserLocation {
-  final double x;
-  final double y;
-
-  UserLocation({required this.x, required this.y});
-
-  factory UserLocation.fromJson(Map<String, dynamic> json) {
-    return UserLocation(
-      x: (json['svgX'] as num).toDouble(),
-      y: (json['svgY'] as num).toDouble(),
-    );
-  }
-}
+import '../../models/user_location.dart';
 
 // Callback types
 typedef LocationUpdateCallback = void Function(UserLocation? location);

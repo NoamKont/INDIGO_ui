@@ -268,7 +268,7 @@ class _WifiCollectionFingerprintState extends State<WifiCollectionFingerprint> {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/${widget.building.name}_floor${selectedFloor}.csv');
 
-    final success = await positioningService.sendFingerprint(
+    final success = await positioningService.sendFingerprintCsvFile(
         Constants.sendFingerprint,
         file,
         widget.building.buildingId,

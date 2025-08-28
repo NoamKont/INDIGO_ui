@@ -42,8 +42,10 @@ class WifiPositioningService {
     if (!locOk) {
       throw StateError('Location Services must be ON for Wi-Fi scanning');
     }
+    //TODO change for debugging(always true)
+    //final ssidOk = await ensureCorrectNetwork();
+    final ssidOk = true;
 
-    final ssidOk = await ensureCorrectNetwork();
     if (!ssidOk) {
       final current = await getCurrentSsid();
       throw StateError(

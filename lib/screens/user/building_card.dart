@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
+//import '../user_floor_view.dart';
 
 class BuildingCard extends StatefulWidget {
   final Building building;
@@ -42,19 +43,6 @@ class _BuildingCardState extends State<BuildingCard> {
       setState(() {
         widget.building.isFavorite = newFavoriteState;
       });
-
-      // Show feedback to user
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(
-      //         newFavoriteState
-      //             ? 'Added to favorites'
-      //             : 'Removed from favorites'
-      //     ),
-      //     duration: Duration(seconds: 2),
-      //     backgroundColor: newFavoriteState ? Colors.green : Colors.grey,
-      //   ),
-      // );
     } catch (e) {
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
