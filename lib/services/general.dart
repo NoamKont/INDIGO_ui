@@ -7,6 +7,48 @@ import '../models/Room.dart';
 
 class GeneralService {
 
+  Future<dynamic> sendRequest({
+    required Uri url,
+    String method = "GET",
+    Map<String, String>? queryParams,
+    Map<String, String>? headers,
+    dynamic body,
+  }) async {
+    Uri finalUrl = url;
+
+    // attach query params if needed
+    if (queryParams != null && queryParams.isNotEmpty) {
+      finalUrl = url.replace(queryParameters: queryParams);
+    }
+
+    // default headers
+    final defaultHeaders = {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      ...?headers,
+    };
+
+    http.Response resp;
+
+    try {
+        resp = await http.get(finalUrl, headers: defaultHeaders);
+    } catch (e) {
+      throw Exception("Network error: $e");
+    }
+
+    // check status
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception(
+          "Request failed [${resp.statusCode}]: ${resp.body}");
+    }
+
+    // parse JSON
+    try {
+      return jsonDecode(resp.body);
+    } catch (_) {
+      return resp.body; // fallback in case it's plain text/SVG
+    }
+  }
 
   Future<String> sendSvgRequest({
     required Uri url,

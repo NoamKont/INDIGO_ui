@@ -30,14 +30,17 @@ class Constants {
 
   static const String calibrateFloorPlan = "$fullServerPath/floor/calibrate";
   static const String getRoute = "$fullServerPath/floor/route/get";
+  //ToDO: change
+  static const String getRoutePoints = "$fullServerPath/floor/getRouteList";
 
 
   static const String train = "$fullServerPath/floor/scan";
   static const String sendFingerprint = "$fullServerPath/floor/scan/upload";
 
   static const String getUserLocation = "$fullServerPath/predict/top1";
+
   //TODO: change
-  static const String getEstimatedLocation = "$fullServerPath/predict/top1";
+  static const String getEstimatedLocation = "$fullServerPath/predict/get";
 
   static const String getMetersToPixelScaleUri = "$fullServerPath/floor/getOneCmSvg";
 
@@ -49,6 +52,7 @@ class Constants {
     // Add authentication headers if needed
     // 'Authorization': 'Bearer $token',
   };
+
 
 
 }

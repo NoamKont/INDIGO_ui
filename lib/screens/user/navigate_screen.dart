@@ -80,6 +80,9 @@ class _UserFloorViewState extends State<UserFloorView> {
   final _androidIdPlugin = AndroidId();
   String? sessionID;
 
+  var currentPath = <UserLocation>[];
+
+
 
 
 
@@ -138,15 +141,7 @@ class _UserFloorViewState extends State<UserFloorView> {
   }
 
   Future<void> _startPdr() async {
-    // if (isPdrRunning || !isTrackingEnabled) return;
-    //
-    // _startPdrSensors();            // ← start immediately
-    // if (userLocation == null) {
-    //   await fetchUserStartPosition();
-    // }
-
     // Ensure we have a location before starting PDR
-    //TODO test if still working
     if (userLocation == null) {
       await fetchUserStartPosition().then((_) {
         if (userLocation != null) {
@@ -197,7 +192,11 @@ class _UserFloorViewState extends State<UserFloorView> {
           final svgY = (svgHeight / 2) - (newMeterY * metersToPixelScale); // SVG Y is inverted
 
           setState(() {
-            userLocation = UserLocation(x: svgX, y: svgY);
+            final predPDR = UserLocation(x: svgX, y: svgY);
+            userLocation = _pathCoordinateCorrection(predPDR);
+
+            //userLocation = UserLocation(x: svgX, y: svgY);
+
             final loc = userLocation;
             if (loc == null) return;
             //debug
@@ -210,6 +209,25 @@ class _UserFloorViewState extends State<UserFloorView> {
     });
 
     setState(() {});
+  }
+
+  UserLocation _pathCoordinateCorrection(UserLocation p) {
+    if (currentPath.isEmpty) return UserLocation(x: -1, y: -1);
+
+    UserLocation? best;
+    double bestDist2 = double.infinity;
+
+    for (final point in currentPath) {
+      final dx = point.x - p.x;
+      final dy = point.y - p.y;
+      final d2 = dx * dx + dy * dy;
+
+      if (d2 < bestDist2) {
+        bestDist2 = d2;
+        best = point;               // <-- corrected: use point, not p
+      }
+    }
+    return best ?? UserLocation(x: -1, y: -1);
   }
 
   void _stopPdr() {
@@ -261,31 +279,6 @@ class _UserFloorViewState extends State<UserFloorView> {
     );
   }
 
-  // void _toggleNavigationMode1() async{
-  //   setState(() => isLiveLocationOn = !isLiveLocationOn
-  //   );
-  //
-  //   if (isLiveLocationOn) {
-  //     // turn ON: enable tracking + start PDR
-  //     if (!isTrackingEnabled) {
-  //       setState(() => isTrackingEnabled = true);
-  //     }
-  //     await _startLocationTracking();   // server correction loop
-  //     _resetPdr(calledFromToggle: true);                // zero counters
-  //     await _startPdr();                // start sensors
-  //     await _showNorthAlignmentDialog();
-  //   } else {
-  //     // turn OFF: stop everything
-  //     locationTimer?.cancel();
-  //     _stopPdr();
-  //     setState(() {
-  //       isTrackingEnabled = false;
-  //       isPdrRunning = false;
-  //       userLocation = null; // or keep last point
-  //     });
-  //   }
-  // }
-
   void _toggleNavigationMode() async {
     final turningOn = !isLiveLocationOn;
 
@@ -309,27 +302,8 @@ class _UserFloorViewState extends State<UserFloorView> {
     });
 
     await _initAsync();
+    await _showNorthAlignmentDialog();
     await fetchUserStartPosition();
-
-    // if (isLiveLocationOn) {
-    //   // turn ON: enable tracking + start PDR
-    //   if (!isTrackingEnabled) {
-    //     setState(() => isTrackingEnabled = true);
-    //   }
-    //   await _startLocationTracking();   // server correction loop
-    //   _resetPdr(calledFromToggle: true);                // zero counters
-    //   await _startPdr();                // start sensors
-    //   await _showNorthAlignmentDialog();
-    // } else {
-    //   // turn OFF: stop everything
-    //   locationTimer?.cancel();
-    //   _stopPdr();
-    //   setState(() {
-    //     isTrackingEnabled = false;
-    //     isPdrRunning = false;
-    //     userLocation = null; // or keep last point
-    //   });
-    // }
   }
 
   void _startNavigationFromCurrentLocation() async {
@@ -338,10 +312,11 @@ class _UserFloorViewState extends State<UserFloorView> {
       if (!isTrackingEnabled) {
         setState(() => isTrackingEnabled = true);
       }
-      await _startLocationTracking();   // server correction loop
+      //TODO debug mute server correction
+      // await _startLocationTracking();   // server correction loop
       _resetPdr(calledFromToggle: true);                // zero counters
       await _startPdr();                // start sensors
-      await _showNorthAlignmentDialog();
+      //await _showNorthAlignmentDialog();
     } else {
       // turn OFF: stop everything
       locationTimer?.cancel();
@@ -489,9 +464,9 @@ class _UserFloorViewState extends State<UserFloorView> {
     }
   }
 
-  void getNavigationRoute(Map<String, dynamic> nav) async {
-    final dest = nav['destination'] as String?;
+  Future<void> getNavigationRoute(Map<String, dynamic> nav) async {
     final curr = nav['currentLocation'] as String?;
+    final dest = nav['destination'] as String?;
     if (dest == null || curr == null || dest.isEmpty || curr.isEmpty) return;
 
     if (!mounted) return;
@@ -513,11 +488,11 @@ class _UserFloorViewState extends State<UserFloorView> {
           'buildingId': widget.building.buildingId.toString(),
           'floorId': selectedFloor.toString(),
           'sessionId': sessionID ?? "unknown_session",
-          'start': dest,
-          'goal': curr,
-          'coordinates': userLocation.toString(),
+          'start':curr,
+          'goal': dest,
+          'coordinate': userLocation.toString(),
         },
-      );
+      ).timeout(const Duration(seconds: 60));
     } on TimeoutException {
       errorText = 'The routing request timed out. Please try again.';
     } catch (e) {
@@ -531,7 +506,7 @@ class _UserFloorViewState extends State<UserFloorView> {
       await _loadSvg();
     } else {
       final dims = SvgParser.parseDimensions(newSvg!);
-      if(dest == 'Current Location'){
+      if(curr == 'Current Location'){
         _startNavigationFromCurrentLocation();
       }
       svgWidth = dims.width;
@@ -545,6 +520,73 @@ class _UserFloorViewState extends State<UserFloorView> {
       setState(() => isRouteLoading = false);
     }
   }
+
+  Future<void> getRoutePoints(Map<String, dynamic> nav) async {
+    final curr = nav['currentLocation'] as String?;
+    final dest = nav['destination'] as String?;
+    if (curr == null || dest == null || curr.isEmpty || dest.isEmpty) {
+      if (!mounted) return;
+      setState(() => currentPath = <UserLocation>[]);
+      return;
+    }
+
+    try {
+      final url = Uri.parse(Constants.getRoutePoints);
+
+      final resp = await generalService
+          .sendRequest(
+        url: url,
+        method: "GET",
+        queryParams: {
+          'buildingId': widget.building.buildingId.toString(),
+          'floorId': selectedFloor.toString(),
+          'sessionId': sessionID ?? "unknown_session",
+          'start': curr,
+          'goal': dest,
+          'coordinate': userLocation.toString(),
+        },
+      )
+          .timeout(const Duration(seconds: 60));
+
+      if (resp is! Map<String, dynamic>) {
+        throw Exception("Unexpected response type: ${resp.runtimeType}");
+      }
+
+      final dynamic pathDyn = resp['path'];
+      if (pathDyn is! List) {
+        throw Exception("Missing/invalid 'path' array in response");
+      }
+
+      final points = <UserLocation>[];
+      for (final p in pathDyn) {
+        if (p is List && p.length >= 2 && p[0] is num && p[1] is num) {
+          points.add(
+            UserLocation(
+              x: (p[0] as num).toDouble(),
+              y: (p[1] as num).toDouble(),
+              floor: selectedFloor,
+            ),
+          );
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        currentPath = points; // <-- store result here
+        print(currentPath);
+      });
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() => currentPath = <UserLocation>[]);
+      throw Exception("Navigation points request timed out.");
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => currentPath = <UserLocation>[]);
+      throw Exception("Failed to fetch navigation points: $e");
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -659,7 +701,17 @@ class _UserFloorViewState extends State<UserFloorView> {
           Align(
             alignment: Alignment.bottomCenter,
             child: NavigationBottomSheet(
-              onNavigationPressed: getNavigationRoute,
+              //onNavigationPressed: getNavigationRoute,
+              onNavigationPressed: (nav) async {
+                try {
+                  await getRoutePoints(nav);
+                  await getNavigationRoute(nav);
+                  print("after function $currentPath");
+                } catch (e) {
+                  if (!mounted) return;
+                  await ErrorDialog.show(context, 'Failed to load route points: $e');
+                }
+              },
               places: places,
             ),
           ),
