@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../../models/Building.dart';
 import 'package:indigo_test/screens/user/navigate_screen.dart';
-//import '../user_floor_view.dart';
 
 class BuildingCard extends StatefulWidget {
   final Building building;

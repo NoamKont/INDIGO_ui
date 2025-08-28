@@ -47,8 +47,9 @@ class _UserFloorViewState extends State<UserFloorView> {
   UserLocation? userLocation;
   Timer? locationTimer;
   bool isLocationLoading = false;
-  bool isTrackingEnabled = false;
   bool isRouteLoading = false;
+
+  bool isTrackingEnabled = false;
 
   // PDR State - now integrated with location tracking
   bool isPdrRunning = false;
@@ -71,8 +72,7 @@ class _UserFloorViewState extends State<UserFloorView> {
   double metersToPixelScale = 8.5; // 8.5 pixels per meter (adjustable)
 
   bool isNavigating = false;       // true when a route SVG is shown
-
-
+  bool isLiveLocationOn = false;
 
 
   void initState(){
@@ -97,6 +97,7 @@ class _UserFloorViewState extends State<UserFloorView> {
       });
     }
   }
+
   @override
   void dispose() {
     locationTimer?.cancel();
@@ -216,7 +217,6 @@ class _UserFloorViewState extends State<UserFloorView> {
     return "${meterX.toStringAsFixed(1)}m, ${meterY.toStringAsFixed(1)}m";
   }
 
-
   Future<void> _showNorthAlignmentDialog() async {
     await showDialog<void>(
       context: context,
@@ -234,29 +234,28 @@ class _UserFloorViewState extends State<UserFloorView> {
     );
   }
 
+  void _toggleNavigationMode() {
+    setState(() => isLiveLocationOn = !isLiveLocationOn);
 
-  void _togglePdrMode() {
-    if (!isTrackingEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enable location tracking first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    if (isPdrRunning) {
-      // stopping
-      _stopPdr();
-      return;
-    }
-
-    // starting
-    fetchUserStartPosition().then((_) {
-      _resetPdr();        // zero counters, keep current dot as anchor
-      _startPdr();        // this will set isPdrRunning = true inside _startPdrSensors()
+    if (isLiveLocationOn) {
+      // turn ON: enable tracking + start PDR
+      if (!isTrackingEnabled) {
+        setState(() => isTrackingEnabled = true);
+      }
+      _startLocationTracking();   // server correction loop
+      _resetPdr();                // zero counters
+      _startPdr();                // start sensors
       _showNorthAlignmentDialog();
-    });
+    } else {
+      // turn OFF: stop everything
+      locationTimer?.cancel();
+      _stopPdr();
+      setState(() {
+        isTrackingEnabled = false;
+        isPdrRunning = false;
+        userLocation = null; // or keep last point
+      });
+    }
   }
 
   Future<void> fetchUserStartPosition() async {
@@ -378,7 +377,7 @@ class _UserFloorViewState extends State<UserFloorView> {
     }
   }
 
-  void onNavigationDataReceived(Map<String, dynamic> nav) async {
+  void getNavigationRoute(Map<String, dynamic> nav) async {
     final dest = nav['destination'] as String?;
     final curr = nav['currentLocation'] as String?;
     if (dest == null || curr == null || dest.isEmpty || curr.isEmpty) return;
@@ -442,50 +441,24 @@ class _UserFloorViewState extends State<UserFloorView> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // PDR Mode Button
+                // Single master toggle: Navigation (starts/stops tracking + PDR)
                 IconButton(
                   icon: Icon(
-                    isPdrRunning ? Icons.directions_walk : Icons.directions_walk_outlined,
-                    color: isPdrRunning ? Colors.green : Colors.grey,
+                    isLiveLocationOn ? Icons.navigation : Icons.navigation_outlined,
+                    color: isLiveLocationOn ? Colors.blue : Colors.grey,
                     size: 20,
                   ),
-                  tooltip: 'PDR Mode',
-                  onPressed: _togglePdrMode,
+                  tooltip: 'Navigation',
+                  onPressed: _toggleNavigationMode,
                 ),
 
-                // North alignment button (only visible in PDR mode)
-                if (isPdrRunning)
+                // Align North visible ONLY when nav mode is ON
+                if (isLiveLocationOn)
                   IconButton(
                     icon: const Icon(Icons.compass_calibration, size: 20),
                     tooltip: 'Align North',
                     onPressed: _showNorthAlignmentDialog,
                   ),
-
-                // Location tracking toggle
-                IconButton(
-                  icon: Icon(
-                    isTrackingEnabled ? Icons.location_on : Icons.location_off,
-                    color: isTrackingEnabled ? Colors.blue : Colors.grey,
-                    size: 20,
-                  ),
-                  tooltip: 'Location Tracking',
-                  onPressed: () {
-                    setState(() {
-                      isTrackingEnabled = !isTrackingEnabled;
-                    });
-
-                    if (isTrackingEnabled) {
-                      _startLocationTracking();
-                    } else {
-                      locationTimer?.cancel();
-                      _stopPdr();
-                      setState(() {
-                        isPdrRunning = false;
-                        userLocation = null;
-                      });
-                    }
-                  },
-                ),
               ],
             ),
           ),
@@ -506,7 +479,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                         setState(() {
                           selectedFloor = floor;
                           userLocation = null;
-                          isNavigating = false;
+                          isNavigating = false; // route cleared on floor change
                         });
                         _loadSvg();
                         _loadRoomNames();
@@ -520,7 +493,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                       },
                     ),
 
-                    // PDR info when active
+                    // PDR info (kept as-is; shows when PDR is running)
                     if (isPdrRunning) ...[
                       const SizedBox(width: 16),
                       Expanded(
@@ -532,7 +505,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                             border: Border.all(color: Colors.green.shade200),
                           ),
                           child: Text(
-                            'PDR: ${pdrSteps} steps | ${_getCurrentPositionInMeters()}',
+                            'PDR: $pdrSteps steps | ${_getCurrentPositionInMeters()}',
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                           ),
                         ),
@@ -568,7 +541,7 @@ class _UserFloorViewState extends State<UserFloorView> {
           Align(
             alignment: Alignment.bottomCenter,
             child: NavigationBottomSheet(
-              onNavigationPressed: onNavigationDataReceived,
+              onNavigationPressed: getNavigationRoute,
               places: places,
             ),
           ),
@@ -576,4 +549,5 @@ class _UserFloorViewState extends State<UserFloorView> {
       ),
     );
   }
+
 }

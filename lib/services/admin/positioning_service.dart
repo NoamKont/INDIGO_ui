@@ -100,6 +100,8 @@ class PositioningService {
     try {
       final url = Uri.parse(uri);
 
+      //return UserLocation(x: 213.038, y: 350.85);
+
       // Final payload structure
       final payload = {
         'building_id': buildingId,
