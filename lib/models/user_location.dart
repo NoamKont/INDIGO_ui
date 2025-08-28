@@ -31,8 +31,6 @@ class UserLocation {
     return {
       'svgX': x,
       'svgY': y,
-      if (floor != null) 'floor': floor,
-      if (confidence != null) 'confidence': confidence,
     };
   }
 

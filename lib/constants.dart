@@ -36,6 +36,9 @@ class Constants {
   static const String sendFingerprint = "$fullServerPath/floor/scan/upload";
 
   static const String getUserLocation = "$fullServerPath/predict/top1";
+  //TODO: change
+  static const String getEstimatedLocation = "$fullServerPath/predict/top1";
+
   static const String getMetersToPixelScaleUri = "$fullServerPath/floor/getOneCmSvg";
 
   static const String getGridSvg = "$fullServerPath/floor/getGridSvg";
@@ -46,5 +49,6 @@ class Constants {
     // Add authentication headers if needed
     // 'Authorization': 'Bearer $token',
   };
+
 
 }

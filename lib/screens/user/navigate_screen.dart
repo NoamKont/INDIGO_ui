@@ -23,8 +23,6 @@ import '../../utils/svg_parser.dart';
 
 
 
-
-
 class UserFloorView extends StatefulWidget {
   final Building building;
   const UserFloorView({Key? key, required this.building}) : super(key: key);
@@ -72,6 +70,9 @@ class _UserFloorViewState extends State<UserFloorView> {
   // PDR coordinate conversion (meters to SVG pixels)
   double metersToPixelScale = 8.5; // 8.5 pixels per meter (adjustable)
 
+  bool isNavigating = false;       // true when a route SVG is shown
+
+
 
 
   void initState(){
@@ -105,13 +106,18 @@ class _UserFloorViewState extends State<UserFloorView> {
 
   void _startLocationTracking() {
     _initAsync();
-    fetchUserLocation();
-    locationTimer = Timer.periodic(
-      const Duration(seconds: 3),
-          (_) {
-        if (mounted && !isPdrRunning) fetchUserLocation();
-      },
-    );
+    fetchUserStartPosition();
+    locationTimer?.cancel();
+
+    locationTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!mounted || !isTrackingEnabled) return;
+      if (isNavigating && isPdrRunning) {
+        await getEstimatedLocation();
+      } else if (!isPdrRunning) {
+        await fetchUserStartPosition();
+      }
+    });
+
   }
 
   void _startPdr() {
@@ -119,7 +125,7 @@ class _UserFloorViewState extends State<UserFloorView> {
 
     // Ensure we have a location before starting PDR
     if (userLocation == null) {
-      fetchUserLocation().then((_) {
+      fetchUserStartPosition().then((_) {
         if (userLocation != null) {
           _startPdrSensors();
         }
@@ -196,7 +202,7 @@ class _UserFloorViewState extends State<UserFloorView> {
 
     // Fetch fresh location instead of using hardcoded values
     if (isTrackingEnabled) {
-      fetchUserLocation();
+      fetchUserStartPosition();
     }
   }
 
@@ -210,103 +216,7 @@ class _UserFloorViewState extends State<UserFloorView> {
     return "${meterX.toStringAsFixed(1)}m, ${meterY.toStringAsFixed(1)}m";
   }
 
-  // Future<void> _showNorthAlignmentDialog1() async {
-  //   double tempOffset = pdrNorthOffset;
-  //
-  //   await showDialog<void>(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     builder: (context) {
-  //       return StatefulBuilder(
-  //         builder: (context, setDialogState) {
-  //           return AlertDialog(
-  //             title: const Text('Align North Direction'),
-  //             content: Column(
-  //               mainAxisSize: MainAxisSize.min,
-  //               children: [
-  //                 const Text(
-  //                   'Rotate the adjustment to align the arrow with the north direction on your floor map.',
-  //                   style: TextStyle(fontSize: 14),
-  //                 ),
-  //                 const SizedBox(height: 20),
-  //
-  //                 // Compass visualization
-  //                 Container(
-  //                   width: 120,
-  //                   height: 120,
-  //                   decoration: BoxDecoration(
-  //                     border: Border.all(color: Colors.grey.shade300, width: 2),
-  //                     shape: BoxShape.circle,
-  //                   ),
-  //                   child: Stack(
-  //                     alignment: Alignment.center,
-  //                     children: [
-  //                       // Background circle
-  //                       Container(
-  //                         width: 100,
-  //                         height: 100,
-  //                         decoration: BoxDecoration(
-  //                           color: Colors.grey.shade50,
-  //                           shape: BoxShape.circle,
-  //                         ),
-  //                       ),
-  //                       // North arrow
-  //                       Transform.rotate(
-  //                         angle: tempOffset * pi / 180.0,
-  //                         child: const Icon(
-  //                           Icons.navigation,
-  //                           size: 40,
-  //                           color: Colors.red,
-  //                         ),
-  //                       ),
-  //                       // N, E, S, W labels
-  //                       const Positioned(top: 8, child: Text('N', style: TextStyle(fontWeight: FontWeight.bold))),
-  //                       const Positioned(right: 8, child: Text('E', style: TextStyle(fontWeight: FontWeight.bold))),
-  //                       const Positioned(bottom: 8, child: Text('S', style: TextStyle(fontWeight: FontWeight.bold))),
-  //                       const Positioned(left: 8, child: Text('W', style: TextStyle(fontWeight: FontWeight.bold))),
-  //                     ],
-  //                   ),
-  //                 ),
-  //
-  //                 const SizedBox(height: 20),
-  //
-  //                 // Slider for adjustment
-  //                 Text('Adjustment: ${tempOffset.toStringAsFixed(0)}°'),
-  //                 Slider(
-  //                   value: tempOffset,
-  //                   min: -180,
-  //                   max: 180,
-  //                   divisions: 72, // 5-degree increments
-  //                   label: '${tempOffset.toStringAsFixed(0)}°',
-  //                   onChanged: (value) {
-  //                     setDialogState(() {
-  //                       tempOffset = value;
-  //                     });
-  //                   },
-  //                 ),
-  //               ],
-  //             ),
-  //             actions: [
-  //               TextButton(
-  //                 onPressed: () => Navigator.of(context).pop(),
-  //                 child: const Text('Cancel'),
-  //               ),
-  //               ElevatedButton(
-  //                 onPressed: () {
-  //                   setState(() {
-  //                     pdrNorthOffset = tempOffset;
-  //                   });
-  //                   Navigator.of(context).pop();
-  //                 },
-  //                 child: const Text('Apply'),
-  //               ),
-  //             ],
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
+
   Future<void> _showNorthAlignmentDialog() async {
     await showDialog<void>(
       context: context,
@@ -342,14 +252,14 @@ class _UserFloorViewState extends State<UserFloorView> {
     }
 
     // starting
-    fetchUserLocation().then((_) {
+    fetchUserStartPosition().then((_) {
       _resetPdr();        // zero counters, keep current dot as anchor
       _startPdr();        // this will set isPdrRunning = true inside _startPdrSensors()
       _showNorthAlignmentDialog();
     });
   }
 
-  Future<void> fetchUserLocation() async {
+  Future<void> fetchUserStartPosition() async {
     if (isLocationLoading) return;
 
     setState(() => isLocationLoading = true);
@@ -357,7 +267,7 @@ class _UserFloorViewState extends State<UserFloorView> {
     try {
       final featureVector = await wifiService.scanFeatureVector();
       //TODO delete the print
-      print(featureVector);
+      // print(featureVector);
       final coords = await positioningService.getCurrentLocation(
         Constants.getUserLocation,
         widget.building.buildingId,
@@ -376,32 +286,29 @@ class _UserFloorViewState extends State<UserFloorView> {
     }
   }
 
-  // Future<void> _showErrorDialog(String message) async {
-  //   if (!mounted) return;
-  //   await showDialog<void>(
-  //     context: context,
-  //     barrierDismissible: true,
-  //     builder: (context) {
-  //       return AlertDialog(
-  //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-  //         title: Row(
-  //           children: const [
-  //             Icon(Icons.error_outline, color: Colors.red, size: 28),
-  //             SizedBox(width: 8),
-  //             Text('Route Error'),
-  //           ],
-  //         ),
-  //         content: SingleChildScrollView(child: Text(message)),
-  //         actions: [
-  //           TextButton(
-  //             onPressed: () => Navigator.of(context).pop(),
-  //             child: const Text('Close'),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
+  Future<void> getEstimatedLocation() async {
+    if (isLocationLoading || userLocation == null) return;
+
+    try {
+      final featureVector = await wifiService.scanFeatureVector();
+
+      final coords = await positioningService.getEstimatedLocation(
+        Constants.getEstimatedLocation,
+        widget.building.buildingId,
+        selectedFloor,
+        featureVector,
+        userLocation!,
+      );
+
+      if (coords != null && mounted) {
+        setState(() => userLocation = coords);
+      }
+    } catch (e) {
+      debugPrint('Error fetching estimated location: $e');
+    } finally {
+      if (mounted) setState(() => isLocationLoading = false);
+    }
+  }
 
   Future<void> _loadFloorsAndData() async {
     try {
@@ -471,39 +378,6 @@ class _UserFloorViewState extends State<UserFloorView> {
     }
   }
 
-  // void _parseSvgDimensions(String svgString) {
-  //   try {
-  //     final document = XmlDocument.parse(svgString);
-  //     final svgElement = document.findAllElements('svg').first;
-  //
-  //     final widthAttr = svgElement.getAttribute('width');
-  //     final heightAttr = svgElement.getAttribute('height');
-  //
-  //     if (widthAttr != null && heightAttr != null) {
-  //       final widthStr = widthAttr.replaceAll(RegExp(r'[^0-9.]'), '');
-  //       final heightStr = heightAttr.replaceAll(RegExp(r'[^0-9.]'), '');
-  //
-  //       svgWidth = double.tryParse(widthStr) ?? 800;
-  //       svgHeight = double.tryParse(heightStr) ?? 800;
-  //     } else {
-  //       final viewBox = svgElement.getAttribute('viewBox');
-  //       if (viewBox != null) {
-  //         final parts = viewBox.split(' ');
-  //         if (parts.length == 4) {
-  //           svgWidth = double.tryParse(parts[2]) ?? 800;
-  //           svgHeight = double.tryParse(parts[3]) ?? 800;
-  //         }
-  //       }
-  //     }
-  //
-  //     print('Parsed SVG dimensions: ${svgWidth}x${svgHeight}');
-  //   } catch (e) {
-  //     print('Error parsing SVG dimensions: $e');
-  //     svgWidth = 800;
-  //     svgHeight = 800;
-  //   }
-  // }
-
   void onNavigationDataReceived(Map<String, dynamic> nav) async {
     final dest = nav['destination'] as String?;
     final curr = nav['currentLocation'] as String?;
@@ -511,6 +385,7 @@ class _UserFloorViewState extends State<UserFloorView> {
 
     if (!mounted) return;
     setState(() {
+      isNavigating = true;
       isRouteLoading = true;
       svgData = null;
     });
@@ -538,15 +413,6 @@ class _UserFloorViewState extends State<UserFloorView> {
 
     if (!mounted) return;
 
-    // if (errorText != null) {
-    //   await ErrorDialog.show(context, errorText);
-    //   await _loadSvg();
-    // } else {
-    //   _parseSvgDimensions(newSvg!);
-    //   setState(() {
-    //     svgData = newSvg;
-    //   });
-    // }
     if (errorText != null) {
       await ErrorDialog.show(context, errorText);
       await _loadSvg();
@@ -640,6 +506,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                         setState(() {
                           selectedFloor = floor;
                           userLocation = null;
+                          isNavigating = false;
                         });
                         _loadSvg();
                         _loadRoomNames();
@@ -648,7 +515,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                         if (isPdrRunning) {
                           _resetPdr();
                         } else if (isTrackingEnabled) {
-                          fetchUserLocation();
+                          fetchUserStartPosition();
                         }
                       },
                     ),
@@ -710,117 +577,3 @@ class _UserFloorViewState extends State<UserFloorView> {
     );
   }
 }
-
-// class SvgMapWithLocation extends StatefulWidget {
-//   final String svgData;
-//   final double svgWidth;
-//   final double svgHeight;
-//   final UserLocation? userLocation;
-//
-//   const SvgMapWithLocation({
-//     Key? key,
-//     required this.svgData,
-//     required this.svgWidth,
-//     required this.svgHeight,
-//     this.userLocation,
-//   }) : super(key: key);
-//
-//   @override
-//   _SvgMapWithLocationState createState() => _SvgMapWithLocationState();
-// }
-//
-// class _SvgMapWithLocationState extends State<SvgMapWithLocation> {
-//   final TransformationController _transformationController =
-//   TransformationController();
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return InteractiveViewer(
-//       transformationController: _transformationController,
-//       boundaryMargin: const EdgeInsets.all(20),
-//       minScale: 0.1,
-//       maxScale: 5.0,
-//       constrained: false,
-//       child: Container(
-//         width: widget.svgWidth,
-//         height: widget.svgHeight,
-//         child: Stack(
-//           clipBehavior: Clip.none,
-//           children: [
-//             SvgPicture.string(
-//               widget.svgData,
-//               width: widget.svgWidth,
-//               height: widget.svgHeight,
-//               fit: BoxFit.fill,
-//             ),
-//             if (widget.userLocation != null)
-//               Positioned(
-//                 left: widget.userLocation!.x - 12,
-//                 top: widget.userLocation!.y - 12,
-//                 child: const AnimatedLocationDot(),
-//               ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// class AnimatedLocationDot extends StatefulWidget {
-//   const AnimatedLocationDot({Key? key}) : super(key: key);
-//
-//   @override
-//   _AnimatedLocationDotState createState() => _AnimatedLocationDotState();
-// }
-//
-// class _AnimatedLocationDotState extends State<AnimatedLocationDot>
-//     with SingleTickerProviderStateMixin {
-//   late final AnimationController _controller =
-//   AnimationController(duration: const Duration(seconds: 2), vsync: this)
-//     ..repeat(reverse: true);
-//   late final Animation<double> _anim = Tween(begin: 1.0, end: 1.5).animate(
-//     CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-//   );
-//
-//   @override
-//   void dispose() {
-//     _controller.dispose();
-//     super.dispose();
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return AnimatedBuilder(
-//       animation: _anim,
-//       builder: (_, __) => Stack(
-//         alignment: Alignment.center,
-//         children: [
-//           Container(
-//             width: 17 * _anim.value,
-//             height: 17 * _anim.value,
-//             decoration: BoxDecoration(
-//               color: Colors.blue.withValues(alpha: 0.3),
-//               shape: BoxShape.circle,
-//             ),
-//           ),
-//           Container(
-//             width: 8.5,
-//             height: 8.5,
-//             decoration: BoxDecoration(
-//               color: Colors.blue,
-//               shape: BoxShape.circle,
-//               border: Border.all(color: Colors.white, width: 2),
-//               boxShadow: [
-//                 BoxShadow(
-//                   color: Colors.black.withValues(alpha: 0.2),
-//                   blurRadius: 4,
-//                   offset: const Offset(0, 2),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
