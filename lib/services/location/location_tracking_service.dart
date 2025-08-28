@@ -86,6 +86,7 @@ class LocationTrackingService extends ChangeNotifier {
         _currentBuildingId!,
         _currentFloor!,
         featureVector,
+        "session_id"
       );
 
       if (coords != null) {

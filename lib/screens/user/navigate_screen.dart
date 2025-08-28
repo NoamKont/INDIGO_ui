@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -20,6 +21,9 @@ import '../../widgets/dialogs/north_alignment_dialog.dart';
 import '../../widgets/map/animated_location_dot.dart';
 import '../../widgets/map/svg_map_with_location.dart';
 import '../../utils/svg_parser.dart';
+
+import 'package:android_id/android_id.dart';
+
 
 
 
@@ -71,8 +75,12 @@ class _UserFloorViewState extends State<UserFloorView> {
   // PDR coordinate conversion (meters to SVG pixels)
   double metersToPixelScale = 8.5; // 8.5 pixels per meter (adjustable)
 
-  bool isNavigating = false;       // true when a route SVG is shown
+  bool isNavigating = true;       // true when a route SVG is shown
   bool isLiveLocationOn = false;
+  final _androidIdPlugin = AndroidId();
+  String? sessionID;
+
+
 
 
   void initState(){
@@ -91,7 +99,6 @@ class _UserFloorViewState extends State<UserFloorView> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          //SnackBar(content: Text('Initialization failed: $e')),
           SnackBar(content: Text('Initialization failed: can\'t use location tracking on your current network')),
         );
       });
@@ -105,28 +112,43 @@ class _UserFloorViewState extends State<UserFloorView> {
     super.dispose();
   }
 
-  void _startLocationTracking() {
-    _initAsync();
-    fetchUserStartPosition();
-    locationTimer?.cancel();
 
-    locationTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+  Future<void> _startLocationTracking() async {
+
+    // await _initAsync();
+    // await fetchUserStartPosition();
+
+
+    locationTimer?.cancel();
+    locationTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
       if (!mounted || !isTrackingEnabled) return;
+
       if (isNavigating && isPdrRunning) {
-        await getEstimatedLocation();
-      } else if (!isPdrRunning) {
-        await fetchUserStartPosition();
+        if (!isLocationLoading) {
+          setState(() => isLocationLoading = true);
+          try {
+            print("Fetching estimated location from server...");
+            await getEstimatedLocation();
+          } finally {
+            if (mounted) setState(() => isLocationLoading = false);
+          }
+        }
       }
     });
-
   }
 
-  void _startPdr() {
-    if (isPdrRunning || !isTrackingEnabled) return;
+  Future<void> _startPdr() async {
+    // if (isPdrRunning || !isTrackingEnabled) return;
+    //
+    // _startPdrSensors();            // ← start immediately
+    // if (userLocation == null) {
+    //   await fetchUserStartPosition();
+    // }
 
     // Ensure we have a location before starting PDR
+    //TODO test if still working
     if (userLocation == null) {
-      fetchUserStartPosition().then((_) {
+      await fetchUserStartPosition().then((_) {
         if (userLocation != null) {
           _startPdrSensors();
         }
@@ -176,6 +198,10 @@ class _UserFloorViewState extends State<UserFloorView> {
 
           setState(() {
             userLocation = UserLocation(x: svgX, y: svgY);
+            final loc = userLocation;
+            if (loc == null) return;
+            //debug
+            print('PDR updated to ${loc.x}, ${loc.y}');
           });
         }
       }
@@ -195,14 +221,15 @@ class _UserFloorViewState extends State<UserFloorView> {
     setState(() {});
   }
 
-  void _resetPdr() {
+  void _resetPdr({bool calledFromToggle = false}) {
     pdrSteps = 0;
     _lastStepMs = 0;
     _emaMag = 0;
     _prevEmaMag = 0;
 
-    // Fetch fresh location instead of using hardcoded values
-    if (isTrackingEnabled) {
+    // Only fetch here if we explicitly want a fresh anchor and we're not in the middle of the toggle flow
+    // (The toggle already awaited a fresh position)
+    if (!calledFromToggle && isTrackingEnabled && userLocation == null) {
       fetchUserStartPosition();
     }
   }
@@ -234,18 +261,87 @@ class _UserFloorViewState extends State<UserFloorView> {
     );
   }
 
-  void _toggleNavigationMode() {
-    setState(() => isLiveLocationOn = !isLiveLocationOn);
+  // void _toggleNavigationMode1() async{
+  //   setState(() => isLiveLocationOn = !isLiveLocationOn
+  //   );
+  //
+  //   if (isLiveLocationOn) {
+  //     // turn ON: enable tracking + start PDR
+  //     if (!isTrackingEnabled) {
+  //       setState(() => isTrackingEnabled = true);
+  //     }
+  //     await _startLocationTracking();   // server correction loop
+  //     _resetPdr(calledFromToggle: true);                // zero counters
+  //     await _startPdr();                // start sensors
+  //     await _showNorthAlignmentDialog();
+  //   } else {
+  //     // turn OFF: stop everything
+  //     locationTimer?.cancel();
+  //     _stopPdr();
+  //     setState(() {
+  //       isTrackingEnabled = false;
+  //       isPdrRunning = false;
+  //       userLocation = null; // or keep last point
+  //     });
+  //   }
+  // }
 
+  void _toggleNavigationMode() async {
+    final turningOn = !isLiveLocationOn;
+
+    setState(() {
+      isLiveLocationOn = turningOn;
+
+      if (isLiveLocationOn) {
+        // ensure the chooser contains a "Current Location" option once
+        if (!places.contains('Current Location')) {
+          places.insert(0, 'Current Location');
+        }
+        isTrackingEnabled = true;   // make sure tracking flag is on
+      } else {
+        // turning OFF
+        isTrackingEnabled = false;
+        isPdrRunning = false;
+        if (places.contains('Current Location')) {
+          places.remove('Current Location');
+        }
+      }
+    });
+
+    await _initAsync();
+    await fetchUserStartPosition();
+
+    // if (isLiveLocationOn) {
+    //   // turn ON: enable tracking + start PDR
+    //   if (!isTrackingEnabled) {
+    //     setState(() => isTrackingEnabled = true);
+    //   }
+    //   await _startLocationTracking();   // server correction loop
+    //   _resetPdr(calledFromToggle: true);                // zero counters
+    //   await _startPdr();                // start sensors
+    //   await _showNorthAlignmentDialog();
+    // } else {
+    //   // turn OFF: stop everything
+    //   locationTimer?.cancel();
+    //   _stopPdr();
+    //   setState(() {
+    //     isTrackingEnabled = false;
+    //     isPdrRunning = false;
+    //     userLocation = null; // or keep last point
+    //   });
+    // }
+  }
+
+  void _startNavigationFromCurrentLocation() async {
     if (isLiveLocationOn) {
       // turn ON: enable tracking + start PDR
       if (!isTrackingEnabled) {
         setState(() => isTrackingEnabled = true);
       }
-      _startLocationTracking();   // server correction loop
-      _resetPdr();                // zero counters
-      _startPdr();                // start sensors
-      _showNorthAlignmentDialog();
+      await _startLocationTracking();   // server correction loop
+      _resetPdr(calledFromToggle: true);                // zero counters
+      await _startPdr();                // start sensors
+      await _showNorthAlignmentDialog();
     } else {
       // turn OFF: stop everything
       locationTimer?.cancel();
@@ -257,7 +353,6 @@ class _UserFloorViewState extends State<UserFloorView> {
       });
     }
   }
-
   Future<void> fetchUserStartPosition() async {
     if (isLocationLoading) return;
 
@@ -265,13 +360,12 @@ class _UserFloorViewState extends State<UserFloorView> {
 
     try {
       final featureVector = await wifiService.scanFeatureVector();
-      //TODO delete the print
-      // print(featureVector);
       final coords = await positioningService.getCurrentLocation(
         Constants.getUserLocation,
         widget.building.buildingId,
         selectedFloor,
         featureVector,
+        sessionID ?? "unknown_session",
       );
 
 
@@ -286,21 +380,23 @@ class _UserFloorViewState extends State<UserFloorView> {
   }
 
   Future<void> getEstimatedLocation() async {
-    if (isLocationLoading || userLocation == null) return;
-
+    if (userLocation == null) return;
     try {
       final featureVector = await wifiService.scanFeatureVector();
-
       final coords = await positioningService.getEstimatedLocation(
         Constants.getEstimatedLocation,
         widget.building.buildingId,
         selectedFloor,
         featureVector,
         userLocation!,
+        sessionID ?? "unknown_session",
       );
-
       if (coords != null && mounted) {
         setState(() => userLocation = coords);
+        //debug
+        final loc = userLocation;
+        if (loc == null) return;
+        print('the server update to ${loc.x}, ${loc.y}');
       }
     } catch (e) {
       debugPrint('Error fetching estimated location: $e');
@@ -324,6 +420,8 @@ class _UserFloorViewState extends State<UserFloorView> {
       await _loadSvg();
       await _loadRoomNames();
       await _loadOneCmSvg();
+      await _initSessionId();
+
     } catch (e) {
       debugPrint('Error loading floors: $e');
     }
@@ -369,11 +467,25 @@ class _UserFloorViewState extends State<UserFloorView> {
   Future<void> _loadOneCmSvg() async {
     try {
       metersToPixelScale = await positioningService.fetchOneCmSvg(widget.building.buildingId, selectedFloor);
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {
+        metersToPixelScale = metersToPixelScale * 100; // convert to cm per pixel
+      });
+      }
     } catch (e) {
       debugPrint('Error loading cm per pixel: $e');
     }finally{
       print(metersToPixelScale);
+    }
+  }
+
+  Future<void> _initSessionId() async {
+    try {
+      sessionID = await _androidIdPlugin.getId(); // this works
+      // or: String? sessionID = await _androidIdPlugin.androidId;
+      print("Device session ID: $sessionID");
+    } catch (e) {
+      print("Error reading ANDROID_ID: $e");
     }
   }
 
@@ -400,8 +512,10 @@ class _UserFloorViewState extends State<UserFloorView> {
         queryParams: {
           'buildingId': widget.building.buildingId.toString(),
           'floorId': selectedFloor.toString(),
+          'sessionId': sessionID ?? "unknown_session",
           'start': dest,
           'goal': curr,
+          'coordinates': userLocation.toString(),
         },
       );
     } on TimeoutException {
@@ -417,6 +531,9 @@ class _UserFloorViewState extends State<UserFloorView> {
       await _loadSvg();
     } else {
       final dims = SvgParser.parseDimensions(newSvg!);
+      if(dest == 'Current Location'){
+        _startNavigationFromCurrentLocation();
+      }
       svgWidth = dims.width;
       svgHeight = dims.height;
       setState(() {
@@ -479,7 +596,8 @@ class _UserFloorViewState extends State<UserFloorView> {
                         setState(() {
                           selectedFloor = floor;
                           userLocation = null;
-                          isNavigating = false; // route cleared on floor change
+                          //TODO change debug
+                          //isNavigating = false; // route cleared on floor change
                         });
                         _loadSvg();
                         _loadRoomNames();

@@ -96,7 +96,8 @@ class PositioningService {
       return false;
     }
   }
-  Future<UserLocation?> getCurrentLocation(String uri, int buildingId, int floorId, Map<String, int> data) async {
+
+  Future<UserLocation?> getCurrentLocation(String uri, int buildingId, int floorId, Map<String, int> data, String sessionId) async {
     try {
       final url = Uri.parse(uri);
 
@@ -104,9 +105,10 @@ class PositioningService {
 
       // Final payload structure
       final payload = {
-        'building_id': buildingId,
-        'floor_id': floorId,
+        'buildingId': buildingId,
+        'floorId': floorId,
         'featureVector': data,
+        'sessionId': sessionId,
       };
 
       final response = await http.post(
@@ -135,6 +137,46 @@ class PositioningService {
       return null;
     }
   }
+  Future<UserLocation?> getEstimatedLocation(String uri, int buildingId, int floorId, Map<String, int> featureVector, UserLocation userLocation,String sessionId) async {
+    try {
+      final url = Uri.parse(uri);
+
+      // Final payload structure
+      final payload = {
+        'buildingId': buildingId,
+        'floorId': floorId,
+        'featureVector': featureVector,
+        'userLocation': userLocation.toString(),
+        'sessionId': sessionId,
+      };
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+
+      print('Server response: ${response.statusCode} ${response.body}');
+      if(response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body) as Map<String, dynamic>;
+        // Check if response contains coordinates
+        if (responseData.containsKey('svgX') &&
+            responseData.containsKey('svgY')) {
+          return UserLocation.fromJson(responseData);
+        } else {
+          print('Server response does not contain location coordinates');
+          return null;
+        }
+      }else {
+        print('HTTP Error: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Network error in sendAll: $e');
+      return null;
+    }
+  }
+
   Future<double> fetchOneCmSvg(int buildingId, int floorId,) async {
     final uri = Uri.parse(Constants.getMetersToPixelScaleUri).replace(
       queryParameters: {
@@ -152,42 +194,4 @@ class PositioningService {
     return -1;
   }
 
-  Future<UserLocation?> getEstimatedLocation(String uri, int buildingId, int floorId, Map<String, int> featureVector, UserLocation userLocation) async {
-    try {
-      final url = Uri.parse(uri);
-
-      // Final payload structure
-      final payload = {
-        'building_id': buildingId,
-        'floor_id': floorId,
-        'featureVector': featureVector,
-        'userLocation': userLocation.toJson(),
-      };
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      );
-
-      print('Server response: ${response.statusCode} ${response.body}');
-      if(response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(response.body) as Map<String, dynamic>;
-        // Check if response contains coordinates
-        if (responseData.containsKey('svgX') &&
-            responseData.containsKey('svgY')) {
-          return UserLocation.fromJson(responseData);
-        } else {
-          print('Server response does not contain location coordinates');
-          return null;
-        }
-      }else {
-        print('HTTP Error: ${response.statusCode} - ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      print('Network error in sendAll: $e');
-      return null;
-    }
-  }
 }

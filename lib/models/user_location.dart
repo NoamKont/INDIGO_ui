@@ -33,6 +33,10 @@ class UserLocation {
       'svgY': y,
     };
   }
+  @override
+  String toString() {
+    return '$x,$y';
+  }
 
   factory UserLocation.fromJson(Map<String, dynamic> json) {
     return UserLocation(
