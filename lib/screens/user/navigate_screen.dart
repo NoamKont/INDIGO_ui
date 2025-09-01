@@ -1,28 +1,24 @@
 import 'dart:async';
-import 'dart:ffi';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:indigo_test/constants.dart';
 import 'package:indigo_test/models/Building.dart';
 import 'package:indigo_test/services/general.dart';
 import 'package:indigo_test/services/admin/positioning_service.dart';
-import 'package:indigo_test/services/dataCollection/data_collection.dart';
 import 'package:indigo_test/services/dataCollection/wifi_positioning_service.dart';
 import 'package:indigo_test/widgets/floor_picker.dart';
 import 'package:indigo_test/widgets/navigation_bottom_sheet.dart';
-import 'package:xml/xml.dart';
 
 import '../../models/user_location.dart';
 import '../../widgets/dialogs/error_dialog.dart';
 import '../../widgets/dialogs/north_alignment_dialog.dart';
-import '../../widgets/map/animated_location_dot.dart';
 import '../../widgets/map/svg_map_with_location.dart';
 import '../../utils/svg_parser.dart';
 
 import 'package:android_id/android_id.dart';
+import 'package:indigo_test/models/floor_data.dart';
 
 
 
@@ -57,10 +53,10 @@ class _UserFloorViewState extends State<UserFloorView> {
 
   // PDR State - now integrated with location tracking
   bool isPdrRunning = false;
-  double pdrNorthOffset = 0.0; // degrees to align SVG north with magnetic north
+  double pdrNorthOffset = 14.0; // degrees to align SVG north with magnetic north
   double? headingDeg;
   int pdrSteps = 0;
-  double stepLengthMeters = 0.70;
+  double stepLengthMeters = 0.60;
   final int minStepIntervalMs = 250;
   int _lastStepMs = 0;
 
@@ -86,10 +82,18 @@ class _UserFloorViewState extends State<UserFloorView> {
 
 
 
+  @override
   void initState(){
     super.initState();
     _loadFloorsAndData();
     if (isTrackingEnabled) _startLocationTracking();
+  }
+
+  @override
+  void dispose() {
+    locationTimer?.cancel();
+    _stopPdr();
+    super.dispose();
   }
 
   Future<void> _initAsync() async {
@@ -108,25 +112,11 @@ class _UserFloorViewState extends State<UserFloorView> {
     }
   }
 
-  @override
-  void dispose() {
-    locationTimer?.cancel();
-    _stopPdr();
-    super.dispose();
-  }
-
-
   Future<void> _startLocationTracking() async {
-
-    // await _initAsync();
-    // await fetchUserStartPosition();
-
-
     locationTimer?.cancel();
-    locationTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
+    locationTimer = Timer.periodic(const Duration(seconds: 12), (_) async {
       if (!mounted || !isTrackingEnabled) return;
-
-      if (isNavigating && isPdrRunning) {
+      if (isNavigating  && isPdrRunning) {
         if (!isLocationLoading) {
           setState(() => isLocationLoading = true);
           try {
@@ -154,6 +144,7 @@ class _UserFloorViewState extends State<UserFloorView> {
   }
 
   void _startPdrSensors() {
+    int timer = 0 ;
     isPdrRunning = true;
 
     // Start compass
@@ -193,14 +184,17 @@ class _UserFloorViewState extends State<UserFloorView> {
 
           setState(() {
             final predPDR = UserLocation(x: svgX, y: svgY);
-            userLocation = _pathCoordinateCorrection(predPDR);
-
-            //userLocation = UserLocation(x: svgX, y: svgY);
+            if (timer % 3 == 0) {
+              userLocation = _pathCoordinateCorrection(predPDR);
+            }else {
+              userLocation = predPDR;
+            }
 
             final loc = userLocation;
             if (loc == null) return;
             //debug
             print('PDR updated to ${loc.x}, ${loc.y}');
+            timer++;
           });
         }
       }
@@ -208,7 +202,9 @@ class _UserFloorViewState extends State<UserFloorView> {
       _prevEmaMag = _emaMag;
     });
 
-    setState(() {});
+    setState(() {
+      timer++;
+    });
   }
 
   UserLocation _pathCoordinateCorrection(UserLocation p) {
@@ -247,7 +243,7 @@ class _UserFloorViewState extends State<UserFloorView> {
 
     // Only fetch here if we explicitly want a fresh anchor and we're not in the middle of the toggle flow
     // (The toggle already awaited a fresh position)
-    if (!calledFromToggle && isTrackingEnabled && userLocation == null) {
+    if (!calledFromToggle && isTrackingEnabled) {
       fetchUserStartPosition();
     }
   }
@@ -260,23 +256,6 @@ class _UserFloorViewState extends State<UserFloorView> {
     final meterY = (svgHeight / 2 - userLocation!.y) / metersToPixelScale;
 
     return "${meterX.toStringAsFixed(1)}m, ${meterY.toStringAsFixed(1)}m";
-  }
-
-  Future<void> _showNorthAlignmentDialog() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return NorthAlignmentDialog(
-          initialOffset: pdrNorthOffset,
-          onOffsetChanged: (newOffset) {
-            setState(() {
-              pdrNorthOffset = newOffset;
-            });
-          },
-        );
-      },
-    );
   }
 
   void _toggleNavigationMode() async {
@@ -293,6 +272,7 @@ class _UserFloorViewState extends State<UserFloorView> {
         isTrackingEnabled = true;   // make sure tracking flag is on
       } else {
         // turning OFF
+        _startStopNavigationFromCurrentLocation();
         isTrackingEnabled = false;
         isPdrRunning = false;
         if (places.contains('Current Location')) {
@@ -301,22 +281,22 @@ class _UserFloorViewState extends State<UserFloorView> {
       }
     });
 
-    await _initAsync();
-    await _showNorthAlignmentDialog();
-    await fetchUserStartPosition();
+    if (isLiveLocationOn) {
+      await _initAsync();
+      await fetchUserStartPosition();
+    }
   }
 
-  void _startNavigationFromCurrentLocation() async {
+  void _startStopNavigationFromCurrentLocation() async {
     if (isLiveLocationOn) {
       // turn ON: enable tracking + start PDR
       if (!isTrackingEnabled) {
         setState(() => isTrackingEnabled = true);
       }
       //TODO debug mute server correction
-      // await _startLocationTracking();   // server correction loop
+      //await _startLocationTracking();   // server correction loop
       _resetPdr(calledFromToggle: true);                // zero counters
       await _startPdr();                // start sensors
-      //await _showNorthAlignmentDialog();
     } else {
       // turn OFF: stop everything
       locationTimer?.cancel();
@@ -325,6 +305,7 @@ class _UserFloorViewState extends State<UserFloorView> {
         isTrackingEnabled = false;
         isPdrRunning = false;
         userLocation = null; // or keep last point
+
       });
     }
   }
@@ -441,16 +422,33 @@ class _UserFloorViewState extends State<UserFloorView> {
 
   Future<void> _loadOneCmSvg() async {
     try {
-      metersToPixelScale = await positioningService.fetchOneCmSvg(widget.building.buildingId, selectedFloor);
-      if (mounted) {
-        setState(() {
-        metersToPixelScale = metersToPixelScale * 100; // convert to cm per pixel
+      final floorData = await positioningService.fetchOneCmSvg(
+        widget.building.buildingId,
+        selectedFloor,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        if (floorData != null) {
+          // If pixelToM is meters per pixel → cm per pixel = m/px * 100
+          final mPerPx = floorData.pixelToM;
+          metersToPixelScale = (mPerPx != null) ? (mPerPx * 100.0) : 8.5;
+
+          pdrNorthOffset = floorData.northOffset ?? 14.0;
+        } else {
+          // Whole object missing → hard defaults
+          metersToPixelScale = 8.5;
+          pdrNorthOffset = 14.0;
+        }
       });
-      }
     } catch (e) {
-      debugPrint('Error loading cm per pixel: $e');
-    }finally{
-      print(metersToPixelScale);
+      debugPrint('Error loading floor data: $e');
+      if (!mounted) return;
+      setState(() {
+        metersToPixelScale = 8.5;
+        pdrNorthOffset = 14.0;
+      });
     }
   }
 
@@ -506,12 +504,16 @@ class _UserFloorViewState extends State<UserFloorView> {
       await _loadSvg();
     } else {
       final dims = SvgParser.parseDimensions(newSvg!);
-      if(curr == 'Current Location'){
-        _startNavigationFromCurrentLocation();
+      // if(curr == 'Current Location'){
+      //   _startNavigationFromCurrentLocation();
+      // }
+      if(isLiveLocationOn){
+        _startStopNavigationFromCurrentLocation();
       }
       svgWidth = dims.width;
       svgHeight = dims.height;
       setState(() {
+        userLocation = currentPath.isNotEmpty ? currentPath.first : userLocation;
         svgData = newSvg;
       });
     }
@@ -573,7 +575,6 @@ class _UserFloorViewState extends State<UserFloorView> {
       if (!mounted) return;
       setState(() {
         currentPath = points; // <-- store result here
-        print(currentPath);
       });
     } on TimeoutException {
       if (!mounted) return;
@@ -600,23 +601,21 @@ class _UserFloorViewState extends State<UserFloorView> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Single master toggle: Navigation (starts/stops tracking + PDR)
-                IconButton(
-                  icon: Icon(
-                    isLiveLocationOn ? Icons.navigation : Icons.navigation_outlined,
-                    color: isLiveLocationOn ? Colors.blue : Colors.grey,
-                    size: 20,
-                  ),
-                  tooltip: 'Navigation',
-                  onPressed: _toggleNavigationMode,
-                ),
-
-                // Align North visible ONLY when nav mode is ON
                 if (isLiveLocationOn)
                   IconButton(
-                    icon: const Icon(Icons.compass_calibration, size: 20),
+                    icon: const Icon(Icons.refresh, size: 20),
                     tooltip: 'Align North',
-                    onPressed: _showNorthAlignmentDialog,
+                    onPressed: _resetPdr,
+                  ),
+                  // Single master toggle: Navigation (starts/stops tracking + PDR)
+                  IconButton(
+                    icon: Icon(
+                      isLiveLocationOn ? Icons.navigation : Icons.navigation_outlined,
+                      color: isLiveLocationOn ? Colors.blue : Colors.grey,
+                      size: 20,
+                    ),
+                    tooltip: 'Navigation',
+                    onPressed: _toggleNavigationMode,
                   ),
               ],
             ),
@@ -637,9 +636,9 @@ class _UserFloorViewState extends State<UserFloorView> {
                       onFloorSelected: (floor) {
                         setState(() {
                           selectedFloor = floor;
-                          userLocation = null;
-                          //TODO change debug
-                          //isNavigating = false; // route cleared on floor change
+                          isNavigating = false;
+                          isLiveLocationOn = false;
+                          _startStopNavigationFromCurrentLocation();
                         });
                         _loadSvg();
                         _loadRoomNames();

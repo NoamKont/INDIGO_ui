@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../models/Building.dart';
 import '../../services/admin/admin_service.dart';
 import '../../services/admin/calibration_service.dart';
+import '../../widgets/dialogs/north_alignment_dialog.dart';
 import 'admin_floor_view.dart';
 
 class CalibrationScreen extends StatefulWidget {
@@ -33,11 +34,18 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
   bool isLoading = false;
   bool canSubmit = false;
   bool isNavigateMode = true; // true = navigate/zoom, false = calibrate/tap
+  double pdrNorthOffset = 0.0; // degrees to align SVG north with magnetic north
 
   @override
   void initState() {
     super.initState();
     svgData = widget.svg; // Use the SVG passed from the previous screen
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _showNorthAlignmentDialog();
+      }
+    });
     //loadSvg();
   }
 
@@ -140,7 +148,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
   Future<void> _submitCalibration() async {
     if (!canSubmit || firstPoint == null || secondPoint == null) return;
 
-    // 👇 Print the points
+    //Print the points
     print('Submitting calibration:');
     print('First Point: $firstPoint');
     print('Second Point: $secondPoint');
@@ -157,6 +165,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
         buildingFloor: widget.floor,
         firstPoint: firstPoint!,
         secondPoint: secondPoint!,
+        northOffset: pdrNorthOffset,
         distanceInCm: distance,
       );
 
@@ -166,14 +175,6 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
 
       if (rooms.isNotEmpty) {
         _showSuccessDialog();
-        //TODO if there is problem it here
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => AdminFloorView(building: widget.building,selectedFloor: widget.floor,),
-        //   ),
-        // );
-
       } else {
         _showErrorDialog('Failed to submit calibration data. Please try again.');
       }
@@ -436,6 +437,23 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showNorthAlignmentDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return NorthAlignmentDialog(
+          initialOffset: pdrNorthOffset,
+          onOffsetChanged: (newOffset) {
+            setState(() {
+              pdrNorthOffset = newOffset;
+            });
+          },
         );
       },
     );

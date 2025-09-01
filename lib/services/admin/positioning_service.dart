@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:indigo_test/constants.dart';
+import 'package:indigo_test/models/floor_data.dart';
 import '../../models/user_location.dart';
 import 'package:http_parser/http_parser.dart' show MediaType;
 
@@ -177,7 +179,7 @@ class PositioningService {
     }
   }
 
-  Future<double> fetchOneCmSvg(int buildingId, int floorId,) async {
+  Future<FloorData?> fetchOneCmSvg(int buildingId, int floorId) async {
     final uri = Uri.parse(Constants.getMetersToPixelScaleUri).replace(
       queryParameters: {
         'buildingId': buildingId.toString(),
@@ -185,13 +187,24 @@ class PositioningService {
       },
     );
 
-    final resp = await http.get(uri, headers: {'Accept': 'application/json'});
+    try {
+      final resp = await http.get(uri, headers: {'Accept': 'application/json'});
 
-    if (resp.statusCode >= 200 && resp.statusCode < 300) {
-      final obj = jsonDecode(resp.body) as Map<String, dynamic>;
-      return obj['one_cm_svg'] as double;
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        final raw = jsonDecode(resp.body);
+        if (raw is Map<String, dynamic>) {
+          return FloorData.fromJson(raw);
+        }
+        debugPrint('Unexpected JSON shape for floor data: $raw');
+        return null;
+      } else {
+        debugPrint('fetchOneCmSvg failed: ${resp.statusCode} ${resp.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('fetchOneCmSvg error: $e');
+      return null;
     }
-    return -1;
   }
 
 }

@@ -73,6 +73,7 @@ class CalibrationService {
     required int buildingFloor,
     required Offset firstPoint,
     required Offset secondPoint,
+    required double northOffset,
     required double distanceInCm,
   }) async {
     try {
@@ -84,6 +85,7 @@ class CalibrationService {
       final requestBody = {
         'building_id': buildingId,
         'floor_id' : buildingFloor,
+        'north_offset': northOffset,
         'calibration_data': {
           'first_point': {
             'x': firstPoint.dx,
