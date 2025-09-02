@@ -276,6 +276,13 @@ class _WifiCollectionFingerprintState extends State<WifiCollectionFingerprint> {
     );
 
     if (success == true) {
+      try {
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (e) {
+        debugPrint('Error deleting file: $e');
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('WiFi training data sent successfully!')),
       );

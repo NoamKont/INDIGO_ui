@@ -19,6 +19,9 @@ import '../../utils/svg_parser.dart';
 
 import 'package:android_id/android_id.dart';
 import 'package:indigo_test/models/floor_data.dart';
+import '../../widgets/dialogs/arrival_dialog.dart'; // showArrivalDialog(...)
+import '../../widgets/no_floors_in_building.dart'; // showArrivalDialog(...)
+
 
 
 
@@ -56,7 +59,7 @@ class _UserFloorViewState extends State<UserFloorView> {
   double pdrNorthOffset = 14.0; // degrees to align SVG north with magnetic north
   double? headingDeg;
   int pdrSteps = 0;
-  double stepLengthMeters = 0.60;
+  double stepLengthMeters = 0.55;
   final int minStepIntervalMs = 250;
   int _lastStepMs = 0;
 
@@ -77,16 +80,15 @@ class _UserFloorViewState extends State<UserFloorView> {
   String? sessionID;
 
   var currentPath = <UserLocation>[];
-
-
-
+  bool isFloorsLoading = true;
+  bool _arrivalShownForCurrentRoute = false;
 
 
   @override
   void initState(){
     super.initState();
     _loadFloorsAndData();
-    if (isTrackingEnabled) _startLocationTracking();
+    //if (isTrackingEnabled) _startLocationTracking();
   }
 
   @override
@@ -189,7 +191,7 @@ class _UserFloorViewState extends State<UserFloorView> {
             }else {
               userLocation = predPDR;
             }
-
+            _checkArrivalAndMaybeShow();
             final loc = userLocation;
             if (loc == null) return;
             //debug
@@ -309,6 +311,7 @@ class _UserFloorViewState extends State<UserFloorView> {
       });
     }
   }
+
   Future<void> fetchUserStartPosition() async {
     if (isLocationLoading) return;
 
@@ -349,6 +352,8 @@ class _UserFloorViewState extends State<UserFloorView> {
       );
       if (coords != null && mounted) {
         setState(() => userLocation = coords);
+        _checkArrivalAndMaybeShow();
+
         //debug
         final loc = userLocation;
         if (loc == null) return;
@@ -363,6 +368,8 @@ class _UserFloorViewState extends State<UserFloorView> {
 
   Future<void> _loadFloorsAndData() async {
     try {
+      if (mounted) setState(() => isFloorsLoading = true);
+
       final list = await generalService.getFloors(
         buildingId: widget.building.buildingId,
       );
@@ -373,6 +380,11 @@ class _UserFloorViewState extends State<UserFloorView> {
         if (list.isNotEmpty) selectedFloor = list.first;
       });
 
+      if (floorsList.isEmpty) {
+        _stopPdr();
+        if (mounted) setState(() => isFloorsLoading = false);
+        return;
+      }
       await _loadSvg();
       await _loadRoomNames();
       await _loadOneCmSvg();
@@ -380,6 +392,8 @@ class _UserFloorViewState extends State<UserFloorView> {
 
     } catch (e) {
       debugPrint('Error loading floors: $e');
+    } finally {
+      if (mounted) setState(() => isFloorsLoading = false);
     }
   }
 
@@ -395,7 +409,6 @@ class _UserFloorViewState extends State<UserFloorView> {
     );
 
     if (svgData != null) {
-      //_parseSvgDimensions(svgData!);
       final dims = SvgParser.parseDimensions(svgData!);
       svgWidth = dims.width;
       svgHeight = dims.height;
@@ -472,6 +485,7 @@ class _UserFloorViewState extends State<UserFloorView> {
       isNavigating = true;
       isRouteLoading = true;
       svgData = null;
+      _arrivalShownForCurrentRoute = false;
     });
 
     String? newSvg;
@@ -528,7 +542,10 @@ class _UserFloorViewState extends State<UserFloorView> {
     final dest = nav['destination'] as String?;
     if (curr == null || dest == null || curr.isEmpty || dest.isEmpty) {
       if (!mounted) return;
-      setState(() => currentPath = <UserLocation>[]);
+      setState((){
+        currentPath = <UserLocation>[];
+        _arrivalShownForCurrentRoute = false;
+      });
       return;
     }
 
@@ -587,7 +604,51 @@ class _UserFloorViewState extends State<UserFloorView> {
     }
   }
 
+  double _distancePx(UserLocation a, UserLocation b) {
+    final dx = a.x - b.x;
+    final dy = a.y - b.y;
+    return sqrt(dx*dx + dy*dy);
+  }
 
+  double _metersToPixels(double meters) {
+    // metersToPixelScale is px-per-meter in your code (you divide px by it to get meters).
+    // If you ever switch to meters-per-pixel, change to: return meters / metersToPixelScale;
+    return meters * metersToPixelScale;
+  }
+
+  Future<void> _checkArrivalAndMaybeShow() async {
+    if (_arrivalShownForCurrentRoute) return;
+    if (!isNavigating) return;
+    if (userLocation == null) return;
+    if (currentPath.isEmpty) return;
+
+    final lastPoint = currentPath.last;
+    final distPx = _distancePx(userLocation!, lastPoint);
+    final thresholdPx = _metersToPixels(1.0); // 0.5 meters
+
+    if (distPx <= thresholdPx) {
+      _arrivalShownForCurrentRoute = true;
+
+      if (!mounted) return;
+      await showArrivalDialog(
+        context,
+        destinationName: "Destination",
+        subtitle: "You’re arrive to the goal. Nice!",
+        primaryText: "Finish",
+        onPrimary: () {
+          // e.g., clean up UI
+          _stopPdr();
+          setState(() {
+            isNavigating = false;
+            isLiveLocationOn = false;
+            userLocation = null;
+          });
+          _loadSvg();
+        },
+        secondaryText: "Keep Exploring",
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -607,22 +668,28 @@ class _UserFloorViewState extends State<UserFloorView> {
                     tooltip: 'Align North',
                     onPressed: _resetPdr,
                   ),
-                  // Single master toggle: Navigation (starts/stops tracking + PDR)
-                  IconButton(
-                    icon: Icon(
-                      isLiveLocationOn ? Icons.navigation : Icons.navigation_outlined,
-                      color: isLiveLocationOn ? Colors.blue : Colors.grey,
-                      size: 20,
-                    ),
-                    tooltip: 'Navigation',
-                    onPressed: _toggleNavigationMode,
+                // Single master toggle: Navigation (starts/stops tracking + PDR)
+                IconButton(
+                  icon: Icon(
+                    isLiveLocationOn ? Icons.navigation : Icons.navigation_outlined,
+                    color: isLiveLocationOn ? Colors.blue : Colors.grey,
+                    size: 20,
                   ),
+                  tooltip: 'Navigation',
+                  onPressed: _toggleNavigationMode,
+                ),
               ],
             ),
           ),
         ],
       ),
-      body: Stack(
+      body: isFloorsLoading
+          ? const Center(
+        child: CircularProgressIndicator(),
+      )
+          : floorsList.isEmpty
+          ? buildEmptyState()
+          : Stack(
         children: [
           Column(
             children: [
