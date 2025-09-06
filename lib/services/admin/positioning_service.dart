@@ -103,7 +103,7 @@ class PositioningService {
     try {
       final url = Uri.parse(uri);
 
-      //return UserLocation(x: 213.038, y: 350.85);
+      //return UserLocation(x: 133.15, y: 347.86);
 
       // Final payload structure
       final payload = {

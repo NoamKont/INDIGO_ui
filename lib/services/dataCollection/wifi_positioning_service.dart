@@ -1,12 +1,3 @@
-/// lib/services/wifi_positioning_service.dart
-///
-/// Wi-Fi positioning service:
-/// - init(): ensure permissions, location services ON, and connected to expected SSID
-/// - scanFeatureVector(): returns Map<String, int> of { BSSID: RSSI(dBm) } and caches it
-/// - helpers: getCurrentSsid/Bssid, ensureCorrectNetwork, ensurePermissions, etc.
-
-
-
 import 'dart:async';
 import 'dart:io';
 

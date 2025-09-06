@@ -88,7 +88,6 @@ class _UserFloorViewState extends State<UserFloorView> {
   void initState(){
     super.initState();
     _loadFloorsAndData();
-    //if (isTrackingEnabled) _startLocationTracking();
   }
 
   @override
@@ -297,7 +296,7 @@ class _UserFloorViewState extends State<UserFloorView> {
       }
       //TODO debug mute server correction
       //await _startLocationTracking();   // server correction loop
-      _resetPdr(calledFromToggle: true);                // zero counters
+      _resetPdr(calledFromToggle: true);
       await _startPdr();                // start sensors
     } else {
       // turn OFF: stop everything
@@ -518,16 +517,13 @@ class _UserFloorViewState extends State<UserFloorView> {
       await _loadSvg();
     } else {
       final dims = SvgParser.parseDimensions(newSvg!);
-      // if(curr == 'Current Location'){
-      //   _startNavigationFromCurrentLocation();
-      // }
       if(isLiveLocationOn){
         _startStopNavigationFromCurrentLocation();
       }
       svgWidth = dims.width;
       svgHeight = dims.height;
       setState(() {
-        userLocation = currentPath.isNotEmpty ? currentPath.first : userLocation;
+        userLocation = currentPath.isNotEmpty && isLiveLocationOn ? currentPath.first : userLocation;
         svgData = newSvg;
       });
     }
@@ -705,6 +701,7 @@ class _UserFloorViewState extends State<UserFloorView> {
                           selectedFloor = floor;
                           isNavigating = false;
                           isLiveLocationOn = false;
+                          isTrackingEnabled = false;
                           _startStopNavigationFromCurrentLocation();
                         });
                         _loadSvg();
