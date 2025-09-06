@@ -44,7 +44,7 @@ This repository contains the **UI module**, which communicates with the backend 
 ### Prerequisites
 - Flutter (>=3.0)
 - Android Studio / VS Code
-- Backend server ([INDIGO Server](https://github.com/NoamKont/INDIGO_server))
+- Backend server ([INDIGO Server](https://github.com/MrBomi/Indoor-Navigation))
 
 ### Installation
 ```bash
