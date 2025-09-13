@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import '../../models/Building.dart';
-import '../../services/admin/admin_service.dart';
 import '../../services/admin/calibration_service.dart';
 import '../../widgets/dialogs/north_alignment_dialog.dart';
 import 'admin_floor_view.dart';
@@ -198,7 +197,6 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // TODO: Add your code here for what happens after user clicks "Done"
                 Navigator.push(
                   context,
                   MaterialPageRoute(

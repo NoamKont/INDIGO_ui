@@ -13,12 +13,10 @@ import 'package:indigo_test/widgets/navigation_bottom_sheet.dart';
 
 import '../../models/user_location.dart';
 import '../../widgets/dialogs/error_dialog.dart';
-import '../../widgets/dialogs/north_alignment_dialog.dart';
 import '../../widgets/map/svg_map_with_location.dart';
 import '../../utils/svg_parser.dart';
 
 import 'package:android_id/android_id.dart';
-import 'package:indigo_test/models/floor_data.dart';
 import '../../widgets/dialogs/arrival_dialog.dart'; // showArrivalDialog(...)
 import '../../widgets/no_floors_in_building.dart'; // showArrivalDialog(...)
 

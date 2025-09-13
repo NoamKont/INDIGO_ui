@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:indigo_test/services/admin/admin_service.dart';
-
 import '../../models/Building.dart';
 import 'add_new_building.dart';
 import 'admin_building_card.dart';
